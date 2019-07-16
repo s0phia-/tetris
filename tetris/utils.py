@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 import os
 from numba import njit
 import json
-import telegram
+# import telegram
 from os.path import expanduser
 home = expanduser("~")
 
 
 def notify_ending(message):
+    print("NOTIFY ENDING is DEPRECATED!")
     with open(os.path.join(home, "tel_keys.json"), 'r') as keys_file:
         k = json.load(keys_file)
         token = k['telegram_token']
