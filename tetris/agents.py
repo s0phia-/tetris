@@ -437,10 +437,13 @@ class HierarchicalLearner:
         self.ridge = ridge
         self.stnw = stnw
         if self.ridge:
+            print("Using ridge!")
             D = create_ridge_matrix(self.num_features)
         elif self.stnw:
+            print("Using STNW!")
             D = create_stnw_matrix(self.num_features)
         else:
+            print("Using STEW!")
             D = create_diff_matrix(self.num_features)
 
         self.nonnegative = nonnegative
