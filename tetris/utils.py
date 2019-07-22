@@ -8,15 +8,15 @@ from os.path import expanduser
 home = expanduser("~")
 
 
-def notify_ending(message):
-    print("NOTIFY ENDING is DEPRECATED!")
-    with open(os.path.join(home, "tel_keys.json"), 'r') as keys_file:
-        k = json.load(keys_file)
-        token = k['telegram_token']
-        chat_id = k['telegram_chat_id']
-
-    bot = telegram.Bot(token=token)
-    bot.sendMessage(chat_id=chat_id, text=message)
+# def notify_ending(message):
+#     print("NOTIFY ENDING is DEPRECATED!")
+#     with open(os.path.join(home, "tel_keys.json"), 'r') as keys_file:
+#         k = json.load(keys_file)
+#         token = k['telegram_token']
+#         chat_id = k['telegram_chat_id']
+#
+#     bot = telegram.Bot(token=token)
+#     bot.sendMessage(chat_id=chat_id, text=message)
 
 
 class Bunch(object):

@@ -338,7 +338,7 @@ class HierarchicalLearner:
                  rollout_cumu_dom_filter_phases, filter_best_phases, ols_phases,
                  max_length_phases, gamma_phases, rollout_length_phases, rollout_action_selection_phases,
                  delete_every_phases, learn_from_step_phases, learn_every_step_until, avg_expands_per_children_phases, feature_directors,
-                 standardize_features, max_batch_size, learn_every_after, ew=False,
+                 standardize_features, max_batch_size, learn_every_after, ew=False, ttb=False,
                  random_init_weights=False, do_sgd_update=False, ridge=False, one_se_rule=False, stnw=False,
                  nonnegative=False):
         self.do_sgd_update = do_sgd_update
@@ -414,6 +414,7 @@ class HierarchicalLearner:
         self.learn_every_step_until = learn_every_step_until
 
         self.ew = ew
+        self.ttb = ttb
         self.max_batch_size = max_batch_size
         # self.switch_to_ol = switch_to_ol
         if feature_directors is None:
@@ -429,6 +430,8 @@ class HierarchicalLearner:
         # self.policy_weights = np.ones(self.num_features) / 10
         if random_init_weights:
             self.policy_weights = np.random.normal(loc=0.0, scale=0.1, size=self.num_features)
+        elif self.ttb:
+            self.policy_weights = 0.5 ** np.arange(self.num_features)
         else:
             self.policy_weights = np.ones(self.num_features)
         # self.policy_weights = np.zeros(self.num_features) / 10

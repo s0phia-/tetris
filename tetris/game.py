@@ -453,7 +453,7 @@ class Tetris:
             self.current_state = chosen_action
 
             # LEARN
-            if not self.player.ew:
+            if not (self.player.ew or self.player.ttb):
                 bef = time.time()
                 if not self.game_over:
                     print("Started learning")

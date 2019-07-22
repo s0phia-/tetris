@@ -1,5 +1,5 @@
 from tetris import agents, game
-from tetris.utils import plot_individual_agent, plot_analysis, notify_ending
+from tetris.utils import plot_individual_agent, plot_analysis
 import numpy as np
 import random
 import time
@@ -36,6 +36,7 @@ def p_loop(p, seed, plot_individual=False, return_action_count=False):
                                         learn_every_after=p.learn_every_after,
                                         learn_every_step_until=p.learn_every_step_until,
                                         ew=p.ew,
+                                        ttb=p.ttb,
                                         stnw=p.stnw,
                                         random_init_weights=p.random_init_weights,
                                         do_sgd_update=p.do_sgd_update,
