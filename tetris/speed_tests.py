@@ -61,40 +61,40 @@ mlp.apply(init_weights)
 for param in mlp.parameters():
     print(param.data)
 
-player = agents.TorchAgent(mlp=mlp, num_features=num_features, feature_type=feature_type,
+agent = agents.TorchAgent(mlp=mlp, num_features=num_features, feature_type=feature_type,
                            epsilon=epsilon, add_reward=add_reward)
 
 environment = tetris.Tetris(num_columns=num_columns, num_rows=num_rows, tetromino_size=tetromino_size,
-                            player=player, verbose=verbose)
+                            agent=agent, verbose=verbose)
 
 current_tetromino = environment.tetromino_sampler.next_tetromino()
 after_states = np.array(current_tetromino.get_after_states(environment.current_state))
 
-def f_pyt(after_states, player):
+def f_pyt(after_states, agent):
     values = np.zeros(len(after_states))
     for ix, after_state in enumerate(after_states):
         features = after_state.features
         with torch.no_grad():
-            values[ix] = player.mlp(features)
+            values[ix] = agent.mlp(features)
 
 
-def f_pyt_all(after_states, player):
+def f_pyt_all(after_states, agent):
     features = torch.zeros(len(after_states), 8)
     for ix, after_state in enumerate(after_states):
         features[ix] = after_state.features
     with torch.no_grad():
-        values = player.mlp(features)
+        values = agent.mlp(features)
     values = values.numpy().flatten()
 
-def f_np(after_states, player):
+def f_np(after_states, agent):
     features = np.zeros((len(after_states), 8), dtype=np.float32)
     for ix, after_state in enumerate(after_states):
         features[ix] = after_state.features
-    values = features.dot(player.mlp.state_dict()['0.weight'].numpy()[0])
+    values = features.dot(agent.mlp.state_dict()['0.weight'].numpy()[0])
 
 
 
-# weights = player.mlp.state_dict()['0.weight'].numpy()[0]
+# weights = agent.mlp.state_dict()['0.weight'].numpy()[0]
 
 # @njit
 # def f_nb(after_states, weights):
@@ -106,16 +106,16 @@ def f_np(after_states, player):
 #             v += weights[jx] * features[jx]
 #         values[ix] = v
 
-f_pyt(after_states, player)
-f_pyt_all(after_states, player)  
-f_np(after_states, player)      
+f_pyt(after_states, agent)
+f_pyt_all(after_states, agent)  
+f_np(after_states, agent)      
 # f_nb(after_states, weights)
 """
 
 n = 100000
-print(timeit.timeit('f_pyt(after_states, player)', setup=setup, number=n))
-print(timeit.timeit('f_pyt_all(after_states, player)', setup=setup, number=n))
-print(timeit.timeit('f_np(after_states, player)', setup=setup, number=n))
+print(timeit.timeit('f_pyt(after_states, agent)', setup=setup, number=n))
+print(timeit.timeit('f_pyt_all(after_states, agent)', setup=setup, number=n))
+print(timeit.timeit('f_np(after_states, agent)', setup=setup, number=n))
 # print(timeit.timeit('f_nb(after_states, weights)', setup=setup, number=n))
 
 
@@ -132,7 +132,7 @@ num_rows = 8
 tetromino_size = 3
 
 environment = tetris.Tetris(num_columns=num_columns, num_rows=num_rows, tetromino_size=tetromino_size,
-                            player=agents.RandomAgent(), verbose=False)
+                            agent=agents.RandomAgent(), verbose=False)
 representation = np.array([[1, 1, 0, 1],
                            [1, 1, 1, 1],
                            [1, 0, 0, 1],
