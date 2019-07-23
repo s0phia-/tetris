@@ -25,18 +25,20 @@ from datetime import datetime
 time_id = datetime.now().strftime('%Y_%m_%d_%H_%M')
 np.random.seed(1)
 start = time.time()
+rewards = np.zeros(20)
 for i in range(20):
     env = tetris.Tetris(num_columns=10, num_rows=10, verbose=True)
     agent = ConstantAgent(policy_weights=np.ones(8))
-    print(evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0))
+    rewards[i] = evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0)
 
 end = time.time()
 print("Took ", end - start, " seconds.")
 
 
-with open(time_id + ".txt", "w") as text_file:
+with open("t" + time_id + ".txt", "w") as text_file:
     print("Started at: " + time_id, file=text_file)  # + " from file " + str(__file__)
-    print("Time spent: " + str((end-start)) + "hours.")
+    print("Time spent: " + str((end-start)) + "seconds.", file=text_file)
+    print("Rewards are: " + str(rewards), file=text_file)
 
 # import tetris
 # from agents.m_learning import MLearning

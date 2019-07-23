@@ -4,6 +4,7 @@ from domtools import dom_filter
 from tetris import tetromino
 from stew import StewMultinomialLogit, ChoiceSetData
 from stew.utils import create_diff_matrix, create_ridge_matrix
+from tetris.state import TerminalState
 
 
 class MLearning:
@@ -83,12 +84,13 @@ class MLearning:
         self.rollout_tetrominos.shape = (self.rollout_length, self.avg_expands_per_children)
 
     def choose_action(self, start_state, start_tetromino):
-        all_children_states = start_tetromino.get_after_states(current_state=start_state)
-        children_states = np.array([child for child in all_children_states if not child.terminal_state])
-        if len(children_states) == 0:
-            # Game over!
-            return all_children_states[0], 0, None
+        children_states = start_tetromino.get_after_states(current_state=start_state)
+        # children_states = np.array([child for child in all_children_states if not child.terminal_state])
         num_children = len(children_states)
+        if num_children == 0:
+            # Game over!
+            return TerminalState(), 0, None
+
         action_features = np.zeros((num_children, self.num_features), dtype=np.float_)
         for ix in range(num_children):
             action_features[ix] = children_states[ix].get_features(direct_by=self.feature_directors, order_by=self.feature_order)

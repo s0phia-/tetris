@@ -5,6 +5,11 @@ import time
 # import torch
 
 
+class TerminalState:
+    def __init__(self):
+        self.terminal_state = True
+
+
 class State:
     def __init__(self, representation, lowest_free_rows=None,
                  anchor_col=0,
@@ -33,7 +38,9 @@ class State:
         self.cleared_rows_relative_to_anchor = self.clear_lines(changed_lines=changed_lines)
 
         self.features = None
-        self.terminal_state = check_terminal(self.representation, self.n_legal_rows)  # self.is_terminal()
+        # self.terminal_state = check_terminal(self.representation, self.n_legal_rows)  # self.is_terminal()
+        # Don't create terminal states in the first place now...
+        self.terminal_state = False
         self.reward = 0 if self.terminal_state else self.n_cleared_lines
         self.value_estimate = 0.0
 
@@ -272,8 +279,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                         # Row transitions and wells
                         # Because col_ix == 0, all left_cells are 1
                         row_transitions += 1
-                        cell_right = representation[row_ix, col_ix + 1]
-                        if cell_right:
+                        if representation[row_ix, col_ix + 1]:  # if cell to the right is full
                             local_well_streak += 1
                             cumulative_wells += local_well_streak
                         else:
@@ -297,8 +303,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
             max_well_possibility = lowest_free_rows[col_ix + 1]
             if max_well_possibility > lowest_free_row:
                 for row_ix in range(lowest_free_row, max_well_possibility):
-                    cell_right = representation[row_ix, col_ix + 1]
-                    if cell_right:
+                    if representation[row_ix, col_ix + 1]:  # if cell to the right is full
                         local_well_streak += 1
                         cumulative_wells += local_well_streak
                     else:
@@ -331,8 +336,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                         # Wells and row transitions
                         # Because this is the last column (the right border is "full") and cell == 0:
                         row_transitions += 1
-                        cell_left = representation[row_ix, col_ix - 1]
-                        if cell_left:
+                        if representation[row_ix, col_ix - 1]:  # if cell to the left is full
                             row_transitions += 1
                             local_well_streak += 1
                             cumulative_wells += local_well_streak
@@ -362,8 +366,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
             max_well_possibility = lowest_free_rows[col_ix - 1]
             if max_well_possibility > lowest_free_row:
                 for row_ix in range(lowest_free_row, max_well_possibility):
-                    cell_left = representation[row_ix, col_ix - 1]
-                    if cell_left:
+                    if representation[row_ix, col_ix - 1]:  # if cell to the left is full
                         row_transitions += 1
                         local_well_streak += 1
                         cumulative_wells += local_well_streak

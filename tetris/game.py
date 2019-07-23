@@ -76,9 +76,10 @@ class Tetris:
     #         self.game_over = True
 
     def make_step(self, action):
-        self.cleared_lines += action.n_cleared_lines
-        self.current_state = action
-        self.game_over = self.current_state.terminal_state
+        self.game_over = action.terminal_state
+        if not self.game_over:
+            self.cleared_lines += action.n_cleared_lines
+            self.current_state = action
 
     def print_board(self, clear_the_output=True):
         self.current_state.print_board(clear_the_output=clear_the_output)

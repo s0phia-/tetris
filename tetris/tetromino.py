@@ -43,35 +43,36 @@ class Straight(Tetromino):
         # Vertical placements
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows):
             anchor_row = free_pos
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] += 4
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 4),
-                                    pieces_per_changed_row=np.array([1, 1, 1, 1]),
-                                    landing_height_bonus=1.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 4),
+                                        pieces_per_changed_row=np.array([1, 1, 1, 1]),
+                                        landing_height_bonus=1.5, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
 
-            after_states.append(new_state)
-
-        # Horizontal placements
-        max_col_index = self.num_columns - 3
-        for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
-            anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 4)])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row, col_ix:(col_ix + 4)] = 1
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix:(col_ix + 4)] = anchor_row + 1
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
-                                    pieces_per_changed_row=np.array([4]),
-                                    landing_height_bonus=0, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-
-            after_states.append(new_state)
+            # Horizontal placements
+            if col_ix < self.num_columns - 3:
+            # max_col_index = self.num_columns - 3
+            # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+                anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 4)])
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix:(col_ix + 4)] = anchor_row + 1
+                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                    new_representation = current_state.representation.copy()
+                    new_representation[anchor_row, col_ix:(col_ix + 4)] = 1
+                    new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                            anchor_col=col_ix,
+                                            changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                            pieces_per_changed_row=np.array([4]),
+                                            landing_height_bonus=0, num_features=self.num_features,
+                                            feature_type=self.feature_type)
+                    after_states.append(new_state)
         return after_states
 
 
@@ -90,17 +91,18 @@ class Square(Tetromino):
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row:(anchor_row + 2), col_ix:(col_ix + 2)] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
-                                    pieces_per_changed_row=np.array([2, 2]),
-                                    landing_height_bonus=0.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[anchor_row:(anchor_row + 2), col_ix:(col_ix + 2)] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                        pieces_per_changed_row=np.array([2, 2]),
+                                        landing_height_bonus=0.5, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
         return after_states
 
 
@@ -116,41 +118,44 @@ class SnakeR(Tetromino):
 
     def get_after_states(self, current_state):
         after_states = []
-        # Horizontal placements
-        max_col_index = self.num_columns - 2
-        for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
-            anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]), current_state.lowest_free_rows[col_ix + 2] - 1)
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
-            new_representation[anchor_row + 1, (col_ix + 1):(col_ix + 3)] = 1
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix] = anchor_row + 1
-            new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 2
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
-                                    pieces_per_changed_row=np.array([2]),
-                                    landing_height_bonus=0.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
-
         # Vertical placements
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1, current_state.lowest_free_rows[col_ix + 1])
-            new_representation = current_state.representation.copy()
-            new_representation[(anchor_row + 1):(anchor_row + 3), col_ix] = 1
-            new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
-                                    pieces_per_changed_row=np.array([1, 2]),
-                                    landing_height_bonus=1, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[(anchor_row + 1):(anchor_row + 3), col_ix] = 1
+                new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                        pieces_per_changed_row=np.array([1, 2]),
+                                        landing_height_bonus=1, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
+
+            # Horizontal placements
+            # max_col_index = self.num_columns - 2
+            # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+            if col_ix < self.num_columns - 2:
+                anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]), current_state.lowest_free_rows[col_ix + 2] - 1)
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix] = anchor_row + 1
+                new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 2
+                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                    new_representation = current_state.representation.copy()
+                    new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
+                    new_representation[anchor_row + 1, (col_ix + 1):(col_ix + 3)] = 1
+                    new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                            anchor_col=col_ix,
+                                            changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                            pieces_per_changed_row=np.array([2]),
+                                            landing_height_bonus=0.5, num_features=self.num_features,
+                                            feature_type=self.feature_type)
+                    after_states.append(new_state)
         return after_states
 
 
@@ -165,41 +170,44 @@ class SnakeL(Tetromino):
 
     def get_after_states(self, current_state):
         after_states = []
-        # Horizontal placements
-        max_col_index = self.num_columns - 2
-        for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
-            anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1, np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]))
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row, (col_ix + 1):(col_ix + 3)] = 1
-            new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
-            new_lowest_free_rows[col_ix + 2] = anchor_row + 1
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
-                                    pieces_per_changed_row=np.array([2]),
-                                    landing_height_bonus=0.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
-
         # Vertical placements
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 1)
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row:(anchor_row + 2), col_ix] = 1
-            new_representation[(anchor_row + 1):(anchor_row + 3), col_ix + 1] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 2
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
-                                    pieces_per_changed_row=np.array([1, 2]),
-                                    landing_height_bonus=1, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[anchor_row:(anchor_row + 2), col_ix] = 1
+                new_representation[(anchor_row + 1):(anchor_row + 3), col_ix + 1] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                        pieces_per_changed_row=np.array([1, 2]),
+                                        landing_height_bonus=1, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
+
+            ## Horizontal placements
+            # max_col_index = self.num_columns - 2
+            # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+            if col_ix < self.num_columns - 2:
+                anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1, np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]))
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
+                new_lowest_free_rows[col_ix + 2] = anchor_row + 1
+                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                    new_representation = current_state.representation.copy()
+                    new_representation[anchor_row, (col_ix + 1):(col_ix + 3)] = 1
+                    new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
+                    new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                            anchor_col=col_ix,
+                                            changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                            pieces_per_changed_row=np.array([2]),
+                                            landing_height_bonus=0.5, num_features=self.num_features,
+                                            feature_type=self.feature_type)
+                    after_states.append(new_state)
         return after_states
 
 
@@ -214,75 +222,79 @@ class T(Tetromino):
 
     def get_after_states(self, current_state):
         after_states = []
-        # Horizontal placements
-        max_col_index = self.num_columns - 2
-        for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
-            # upside-down T
-            anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
-            new_representation[anchor_row + 1, col_ix + 1] = 1
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[[col_ix, col_ix + 2]] = anchor_row + 1
-            new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
-                                    pieces_per_changed_row=np.array([3]),
-                                    landing_height_bonus=0.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
-
-            # T
-            anchor_row = np.maximum(current_state.lowest_free_rows[col_ix + 1], np.max(current_state.lowest_free_rows[[col_ix, col_ix + 2]]) - 1)
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
-            new_representation[anchor_row, col_ix + 1] = 1
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
-                                    pieces_per_changed_row=np.array([1, 3]),
-                                    landing_height_bonus=0.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-
-            after_states.append(new_state)
-
         # Vertical placements.
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             # Single cell on left
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1, current_state.lowest_free_rows[col_ix + 1])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row + 1, col_ix] = 1
-            new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 2
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
-                                    pieces_per_changed_row=np.array([1, 2]),
-                                    landing_height_bonus=1, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[anchor_row + 1, col_ix] = 1
+                new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                        pieces_per_changed_row=np.array([1, 2]),
+                                        landing_height_bonus=1, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
 
             # Single cell on right
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 1)
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
-            new_representation[anchor_row + 1, col_ix + 1] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
-                                    pieces_per_changed_row=np.array([1, 2]),
-                                    landing_height_bonus=1, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
+                new_representation[anchor_row + 1, col_ix + 1] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                        pieces_per_changed_row=np.array([1, 2]),
+                                        landing_height_bonus=1, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
+
+            if col_ix < self.num_columns - 2:
+                # Horizontal placements
+        # max_col_index = self.num_columns - 2
+        # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+            # upside-down T
+                anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[[col_ix, col_ix + 2]] = anchor_row + 1
+                new_lowest_free_rows[col_ix + 1] = anchor_row + 2
+                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                    new_representation = current_state.representation.copy()
+                    new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
+                    new_representation[anchor_row + 1, col_ix + 1] = 1
+                    new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                            anchor_col=col_ix,
+                                            changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                            pieces_per_changed_row=np.array([3]),
+                                            landing_height_bonus=0.5, num_features=self.num_features,
+                                            feature_type=self.feature_type)
+                    after_states.append(new_state)
+
+                # T
+                anchor_row = np.maximum(current_state.lowest_free_rows[col_ix + 1], np.max(current_state.lowest_free_rows[[col_ix, col_ix + 2]]) - 1)
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
+                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                    new_representation = current_state.representation.copy()
+                    new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
+                    new_representation[anchor_row, col_ix + 1] = 1
+                    new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                            anchor_col=col_ix,
+                                            changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                            pieces_per_changed_row=np.array([1, 3]),
+                                            landing_height_bonus=0.5, num_features=self.num_features,
+                                            feature_type=self.feature_type)
+                    after_states.append(new_state)
         return after_states
 
 
@@ -297,73 +309,78 @@ class RCorner(Tetromino):
 
     def get_after_states(self, current_state):
         after_states = []
-        # Horizontal placements
-        max_col_index = self.num_columns - 2
-        for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
-            # Bottom-right corner
-            anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
-            new_representation[anchor_row + 1, col_ix + 2] = 1
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1
-            new_lowest_free_rows[col_ix + 2] = anchor_row + 2
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
-                                    pieces_per_changed_row=np.array([3]),
-                                    landing_height_bonus=0.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
-
-            # Top-left corner
-            anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]) - 1)
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
-            new_representation[anchor_row, col_ix] = 1
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
-                                    pieces_per_changed_row=np.array([1, 3]),
-                                    landing_height_bonus=0.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
-
         # Vertical placements.
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             # Top-right corner
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 2, current_state.lowest_free_rows[col_ix + 1])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row + 2, col_ix] = 1
-            new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 3),
-                                    pieces_per_changed_row=np.array([1, 1, 2]),
-                                    landing_height_bonus=1, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[anchor_row + 2, col_ix] = 1
+                new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 3),
+                                        pieces_per_changed_row=np.array([1, 1, 2]),
+                                        landing_height_bonus=1, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
 
             # Bottom-left corner
             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
-            new_representation[anchor_row, col_ix + 1] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 1
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
-                                    pieces_per_changed_row=np.array([2]),
-                                    landing_height_bonus=1, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
+                new_representation[anchor_row, col_ix + 1] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                        pieces_per_changed_row=np.array([2]),
+                                        landing_height_bonus=1, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
+
+            if col_ix < self.num_columns - 2:
+                # Horizontal placements
+        # max_col_index = self.num_columns - 2
+        # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+                # Bottom-right corner
+                anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1
+                new_lowest_free_rows[col_ix + 2] = anchor_row + 2
+                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                    new_representation = current_state.representation.copy()
+                    new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
+                    new_representation[anchor_row + 1, col_ix + 2] = 1
+                    new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                            anchor_col=col_ix,
+                                            changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                            pieces_per_changed_row=np.array([3]),
+                                            landing_height_bonus=0.5, num_features=self.num_features,
+                                            feature_type=self.feature_type)
+                    after_states.append(new_state)
+
+                # Top-left corner
+                anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]) - 1)
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
+                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                    new_representation = current_state.representation.copy()
+                    new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
+                    new_representation[anchor_row, col_ix] = 1
+                    new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                            anchor_col=col_ix,
+                                            changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                            pieces_per_changed_row=np.array([1, 3]),
+                                            landing_height_bonus=0.5, num_features=self.num_features,
+                                            feature_type=self.feature_type)
+                    after_states.append(new_state)
         return after_states
 
 
@@ -378,70 +395,77 @@ class LCorner(Tetromino):
 
     def get_after_states(self, current_state):
         after_states = []
-        max_col_index = self.num_columns - 2
-        for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
-            # Bottom-left corner (= 'hole' in top-right corner)
-            anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
-            new_representation[anchor_row + 1, col_ix] = 1
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix] = anchor_row + 2
-            new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 1
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
-                                    pieces_per_changed_row=np.array([3]),
-                                    landing_height_bonus=0.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
-
-            # Top-right corner
-            anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]) - 1, current_state.lowest_free_rows[col_ix + 2])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
-            new_representation[anchor_row, col_ix + 2] = 1
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
-                                    pieces_per_changed_row=np.array([1, 3]),
-                                    landing_height_bonus=0.5, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
-
         # Vertical placements. 'height' becomes 'width' :)
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             # Top-left corner
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 2)
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row + 2, col_ix + 1] = 1
-            new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 3),
-                                    pieces_per_changed_row=np.array([1, 1, 2]),
-                                    landing_height_bonus=1, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[anchor_row + 2, col_ix + 1] = 1
+                new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 3),
+                                        pieces_per_changed_row=np.array([1, 1, 2]),
+                                        landing_height_bonus=1, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
 
             # Bottom-right corner
             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
-            new_representation = current_state.representation.copy()
-            new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
-            new_representation[anchor_row, col_ix] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
             new_lowest_free_rows[col_ix] = anchor_row + 1
-            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
-                                    anchor_col=col_ix,
-                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
-                                    pieces_per_changed_row=np.array([2]),
-                                    landing_height_bonus=1, num_features=self.num_features,
-                                    feature_type=self.feature_type)
-            after_states.append(new_state)
+            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                new_representation = current_state.representation.copy()
+                new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
+                new_representation[anchor_row, col_ix] = 1
+                new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                        anchor_col=col_ix,
+                                        changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                        pieces_per_changed_row=np.array([2]),
+                                        landing_height_bonus=1, num_features=self.num_features,
+                                        feature_type=self.feature_type)
+                after_states.append(new_state)
+
+
+            if col_ix < self.num_columns - 2:
+
+        # max_col_index = self.num_columns - 2
+        # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+                # Bottom-left corner (= 'hole' in top-right corner)
+                anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix] = anchor_row + 2
+                new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 1
+                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                    new_representation = current_state.representation.copy()
+                    new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
+                    new_representation[anchor_row + 1, col_ix] = 1
+                    new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                            anchor_col=col_ix,
+                                            changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                            pieces_per_changed_row=np.array([3]),
+                                            landing_height_bonus=0.5, num_features=self.num_features,
+                                            feature_type=self.feature_type)
+                    after_states.append(new_state)
+
+                # Top-right corner
+                anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]) - 1, current_state.lowest_free_rows[col_ix + 2])
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
+                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                    new_representation = current_state.representation.copy()
+                    new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
+                    new_representation[anchor_row, col_ix + 2] = 1
+                    new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                            anchor_col=col_ix,
+                                            changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                            pieces_per_changed_row=np.array([1, 3]),
+                                            landing_height_bonus=0.5, num_features=self.num_features,
+                                            feature_type=self.feature_type)
+                    after_states.append(new_state)
         return after_states
