@@ -131,10 +131,11 @@ class State:
                                                                  representation=self.representation,
                                                                  num_rows=self.n_legal_rows,
                                                                  num_columns=self.num_columns)
+        self.features = features
         # ['rows_with_holes', 'column_transitions', 'holes', 'landing_height', 'cumulative_wells',
         #                  'row_transitions', 'eroded', 'hole_depth']
         # self.features = features / np.array([2.18246089, 4.42735771, 3.0698914, 2.31688581, 3.1093846, 4.0334024, 0.46720078, 8.35394364])
-        self.features = features
+
 
     # def calc_standardized_bcts_features(self, convert_to_numpy=True, standardize=True):
     #     features = np.zeros(self.num_features, dtype=np.float32)
@@ -178,7 +179,7 @@ class State:
     #     #     self.features = self.features.numpy().flatten()
 
 
-@njit
+@njit(fastmath=True)
 def check_terminal(representation, n_legal_rows):
     is_terminal = False
     for ix in representation[n_legal_rows]:
@@ -188,7 +189,7 @@ def check_terminal(representation, n_legal_rows):
     return is_terminal
 
 
-@njit
+@njit(fastmath=True)
 def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_columns):
     row_sums = np.sum(representation[changed_lines, :], axis=1)
     is_full = row_sums == num_columns
@@ -214,7 +215,23 @@ def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_colu
     return is_full, n_cleared_lines, representation, lowest_free_rows
 
 
-@njit
+@njit(fastmath=True)
+def numba_sum_int(int_arr):
+    acc = 0
+    for i in int_arr:
+        acc += i
+    return acc
+
+
+@njit(fastmath=True)
+def numba_sum(arr):
+    acc = 0.
+    for i in arr:
+        acc += i
+    return acc
+
+
+@njit(fastmath=True)
 def minmaxavg_jitted(x):
     maximum = x[0]
     minimum = x[0]
@@ -229,7 +246,7 @@ def minmaxavg_jitted(x):
     return minimum, maximum, summed
 
 
-@njit
+@njit(fastmath=True)
 def calc_lowest_free_rows(rep):
     num_rows, n_cols = rep.shape
     lowest_free_rows = np.zeros(n_cols, dtype=np.int_)
@@ -243,7 +260,7 @@ def calc_lowest_free_rows(rep):
     return lowest_free_rows
 
 
-@njit
+@njit(fastmath=True)
 def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_columns):
     rows_with_holes_set = {100}
     column_transitions = 0
