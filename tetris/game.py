@@ -7,8 +7,7 @@ import copy
 # feature_names = ["holes", "cumulative_wells", "cumulative_wells_squared",
 #                  "landing_height", "avg_free_row", "avg_free_row_squared", "n_landing_positions"]
 
-# feature_names = ['rows_with_holes', 'column_transitions', 'holes', 'landing_height', 'cumulative_wells',
-#                  'row_transitions', 'eroded', 'hole_depth']
+
 
 
 class Tetris:
@@ -16,15 +15,19 @@ class Tetris:
     Tetris for reinforcement learning applications.
 
     Tailored to use with a set of hand-crafted features such as "BCTS" (Thiery & Scherrer 2009)
+
+    The BCTS feature names (and order) are
+    ['rows_with_holes', 'column_transitions', 'holes', 'landing_height',
+    'cumulative_wells', 'row_transitions', 'eroded', 'hole_depth']
+
     """
     def __init__(self,
                  num_columns,
                  num_rows,
-                 agent,
-                 verbose,
-                 plot_intermediate_results=False,
+                 verbose=False,
                  tetromino_size=4,
-                 target_update=1,
+                 feature_type="bcts",
+                 num_features=8,
                  max_cleared_test_lines=np.inf):
         """
         
@@ -32,19 +35,17 @@ class Tetris:
         :param num_rows: 
         :param agent: 
         :param verbose: 
-        :param plot_intermediate_results: 
         :param tetromino_size:
-        :param target_update: 
-        :param max_cleared_test_lines: 
+        :param max_cleared_test_lines:
         """
         self.num_columns = num_columns
         self.num_rows = num_rows
         self.tetromino_size = tetromino_size
-        self.agent = agent
+        # self.agent = agent
         self.verbose = verbose
         # self.target_update = target_update
-        self.num_features = self.agent.num_features
-        self.feature_type = self.agent.feature_type
+        self.num_features = num_features
+        self.feature_type = feature_type
         self.num_fields = self.num_columns * self.num_rows
         self.game_over = False
         self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int_),
@@ -59,10 +60,8 @@ class Tetris:
                            tetromino.T(self.feature_type, self.num_features, self.num_columns)]
         self.tetromino_sampler = tetromino.TetrominoSamplerRandom(self.tetrominos)
         self.cleared_lines = 0
-        self.state_samples = []
         self.cumulative_steps = 0
         self.max_cleared_test_lines = max_cleared_test_lines
-        self.plot_intermediate_results = plot_intermediate_results
 
     def reset(self):
         self.game_over = False
@@ -71,30 +70,44 @@ class Tetris:
                                          feature_type=self.feature_type)
         self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
         self.cleared_lines = 0
-        self.state_samples = []
 
-    def test_agent(self, hard_test=False):
-        self.reset()
-        while not self.game_over and self.cleared_lines <= self.max_cleared_test_lines:
-            current_tetromino = self.tetromino_sampler.next_tetromino()
-            if hard_test:
-                chosen_action, action_index = self.agent.choose_action_test_hard(self.current_state, current_tetromino)
-            else:
-                chosen_action, action_index = self.agent.choose_action_test(self.current_state, current_tetromino)
-            self.cleared_lines += chosen_action.n_cleared_lines
-            self.current_state = chosen_action
-            self.game_over = self.current_state.terminal_state
-        return self.cleared_lines
+    # def is_game_over(self):
+    #     if np.any(self.current_state.representation[self.num_rows]):
+    #         self.game_over = True
+
+    def make_step(self, action):
+        self.cleared_lines += action.n_cleared_lines
+        self.current_state = action
+        self.game_over = self.current_state.terminal_state
+
+    def print_board(self, clear_the_output=True):
+        self.current_state.print_board(clear_the_output=clear_the_output)
+
+    def print_board_to_string(self, clear_the_output=True, sleep=0):
+        return self.current_state.print_board_to_string(clear_the_output=clear_the_output, sleep=sleep)
+
+    # def visualize_falling(self, move_index):
+
+
+    # def evaluate(self, hard_test=False):
+    #     self.reset()
+    #     while not self.game_over and self.cleared_lines <= self.max_cleared_test_lines:
+    #         current_tetromino = self.tetromino_sampler.next_tetromino()
+    #         if hard_test:
+    #             chosen_action, action_index = self.agent.choose_action_test_hard(self.current_state, current_tetromino)
+    #         else:
+    #             chosen_action, action_index = self.agent.choose_action_test(self.current_state, current_tetromino)
+    #         self.cleared_lines += chosen_action.n_cleared_lines
+    #         self.current_state = chosen_action
+    #         self.game_over = self.current_state.terminal_state
+    #     return self.cleared_lines
 
     def play_cbmpi(self, testing_time=0, num_tests=1, num_test_games=0, test_points=None, test_environment=None, hard_test=False):
         self.reset()
         test_results = np.zeros((num_tests, num_test_games))
         tested_weights = np.zeros((num_tests, self.num_features))
         tested_value_weights = np.zeros((num_tests, self.agent.num_value_features + 1))
-        if num_tests == 0:
-            test_index = -1
-        else:
-            test_index = 0
+
         # while not self.game_over and test_index < num_tests:
         if num_tests == 0:
             test_index = -1
@@ -226,7 +239,12 @@ class Tetris:
         return self.cleared_lines, test_results, testing_time, tested_weights, weights_storage
 
     def store_moves(self):
+        """
+        Can be used to store states encountered by
+        :return:
+        """
         self.reset()
+        self.state_samples = []
         while not self.game_over and self.cleared_lines <= self.max_cleared_test_lines:
             current_tetromino = self.tetromino_sampler.next_tetromino()
             if self.verbose:
@@ -241,9 +259,7 @@ class Tetris:
             self.game_over = self.current_state.terminal_state
         return self.cleared_lines, self.state_samples
 
-    def is_game_over(self):
-        if np.any(self.current_state.representation[self.num_rows]):
-            self.game_over = True
+
 
 
 Sample = collections.namedtuple('Sample', ('state', 'tetromino'))
