@@ -25,8 +25,8 @@ from datetime import datetime
 time_id = datetime.now().strftime('%Y_%m_%d_%H_%M')
 np.random.seed(1)
 start = time.time()
-rewards = np.zeros(20)
-for i in range(20):
+rewards = np.zeros(100)
+for i in range(100):
     env = tetris.Tetris(num_columns=10, num_rows=10, verbose=True)
     agent = ConstantAgent(policy_weights=np.ones(8))
     rewards[i] = evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0)

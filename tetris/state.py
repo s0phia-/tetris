@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, jitclass, float64, int64, bool_
 from IPython.display import clear_output
 import time
 # import torch
@@ -10,14 +10,39 @@ class TerminalState:
         self.terminal_state = True
 
 
+spec = [
+    ('representation', int64[:, :]),
+    ('lowest_free_rows', int64[:]),
+    ('anchor_col', int64),
+    ('changed_lines', int64[:]),
+    ('pieces_per_changed_row', float64[:]),
+    ('landing_height_bonus', float64),
+    ('num_features', int64),
+    ('feature_type', int64),
+    ('num_rows', int64),
+    ('num_columns', int64),
+    ('n_legal_rows', int64),
+    ('n_cleared_lines', int64),
+    ('anchor_row', int64),
+    ('cleared_rows_relative_to_anchor', bool_),
+    ('features', float64[:]),
+    ('terminal_state', bool_),
+    ('reward', int64),
+    ('value_estimate', float64)
+]
+
+
+@jitclass(spec)
 class State:
-    def __init__(self, representation, lowest_free_rows=None,
+    def __init__(self,
+                 representation,
+                 lowest_free_rows=None,
                  anchor_col=0,
                  changed_lines=np.arange(1),
                  pieces_per_changed_row=np.array([0]),
                  landing_height_bonus=0.0,
                  num_features=8,
-                 feature_type='bcts'):
+                 feature_type=0):
         self.representation = representation
         if lowest_free_rows is None:
             raise ValueError("Should not calc_lowest_free_rows.")
@@ -30,7 +55,7 @@ class State:
         self.pieces_per_changed_row = pieces_per_changed_row
         self.landing_height_bonus = landing_height_bonus
         self.num_features = num_features
-        self.feature_type = feature_type
+        self.feature_type = "bcts"
 
         self.n_legal_rows = self.num_rows - 4
         self.n_cleared_lines = 0
@@ -67,38 +92,38 @@ class State:
     #         self.calc_feature_values()
     #     return np.insert(self.features, obj=0, values=1.)
 
-    def print_board(self, clear_the_output=False):
-        if clear_the_output:
-            clear_output(wait=True)
-        for row_ix in range(self.n_legal_rows):
-            # Start from top
-            row_ix = self.n_legal_rows - row_ix - 1
-            print("|", end=' ')
-            for col_ix in range(self.num_columns):
-                if self.representation[row_ix, col_ix]:
-                    print("██", end=' ')
-                else:
-                    print("  ", end=' ')
-            print("|")
-
-    def print_board_to_string(self, clear_the_output=False, sleep=0):
-        if clear_the_output:
-            clear_output(wait=True)
-        if sleep > 0:
-            time.sleep(sleep)
-        string = "\n"
-        for row_ix in range(self.n_legal_rows):
-            # Start from top
-            row_ix = self.n_legal_rows - row_ix - 1
-            string += "|"
-            for col_ix in range(self.num_columns):
-                if self.representation[row_ix, col_ix]:
-                    string += "██"
-                else:
-                    string += "  "
-            string += "|\n"
-        print(string)
-        return string
+    # def print_board(self, clear_the_output=False):
+    #     if clear_the_output:
+    #         clear_output(wait=True)
+    #     for row_ix in range(self.n_legal_rows):
+    #         # Start from top
+    #         row_ix = self.n_legal_rows - row_ix - 1
+    #         print("|", end=' ')
+    #         for col_ix in range(self.num_columns):
+    #             if self.representation[row_ix, col_ix]:
+    #                 print("██", end=' ')
+    #             else:
+    #                 print("  ", end=' ')
+    #         print("|")
+    #
+    # def print_board_to_string(self, clear_the_output=False, sleep=0):
+    #     if clear_the_output:
+    #         clear_output(wait=True)
+    #     if sleep > 0:
+    #         time.sleep(sleep)
+    #     string = "\n"
+    #     for row_ix in range(self.n_legal_rows):
+    #         # Start from top
+    #         row_ix = self.n_legal_rows - row_ix - 1
+    #         string += "|"
+    #         for col_ix in range(self.num_columns):
+    #             if self.representation[row_ix, col_ix]:
+    #                 string += "██"
+    #             else:
+    #                 string += "  "
+    #         string += "|\n"
+    #     print(string)
+    #     return string
 
     def clear_lines(self, changed_lines):
         is_full, self.n_cleared_lines, self.representation, self.lowest_free_rows = clear_lines_jitted(changed_lines,
@@ -108,10 +133,10 @@ class State:
         return is_full
 
     def calc_feature_values(self):
-        if self.feature_type == 'super_simple':
-            self.calc_super_simple_features()
-        elif self.feature_type == 'bcts':
+        if self.feature_type == 'bcts':
             self.calc_bcts_features()
+        elif self.feature_type == 'super_simple':
+            self.calc_super_simple_features()
         # elif self.feature_type == "adjusted_bcts":
         #     self.calc_bcts_features(standardize_by=self.feature_stds)
         elif self.feature_type == 'simple':
@@ -122,9 +147,9 @@ class State:
             raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
 
     def calc_bcts_features(self):
-        features = np.zeros(self.num_features, dtype=np.float32)
-        eroded_pieces = np.sum(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
-        n_cleared_lines = np.sum(self.cleared_rows_relative_to_anchor)
+        features = np.zeros(self.num_features, dtype=np.float_)
+        eroded_pieces = numba_sum_int(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
+        n_cleared_lines = numba_sum_int(self.cleared_rows_relative_to_anchor)
         features[6] = eroded_pieces * n_cleared_lines
         features[3] = self.anchor_row + self.landing_height_bonus
         features[[0, 1, 2, 4, 5, 7]] = get_feature_values_jitted(lowest_free_rows=self.lowest_free_rows,
@@ -138,7 +163,7 @@ class State:
 
 
     # def calc_standardized_bcts_features(self, convert_to_numpy=True, standardize=True):
-    #     features = np.zeros(self.num_features, dtype=np.float32)
+    #     features = np.zeros(self.num_features, dtype=np.float_)
     #     eroded_pieces = np.sum(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
     #     n_cleared_lines = np.sum(self.cleared_rows_relative_to_anchor)
     #     features[0] = eroded_pieces * n_cleared_lines
@@ -152,7 +177,7 @@ class State:
     #     self.features = features / np.array([4.0334024, 2.18246089, 2.31688581, 4.42735771, 3.0698914, 3.1093846, 0.46720078, 8.35394364])
 
     # def calc_simple_features(self, convert_to_numpy=False):
-    #     features = np.zeros(self.num_features, dtype=np.float32)
+    #     features = np.zeros(self.num_features, dtype=np.float_)
     #     features[:] = get_relevant_holes_jitted4(lowest_free_rows=self.lowest_free_rows,
     #                                              representation=self.representation,
     #                                              anchor_row=self.anchor_row,
@@ -167,7 +192,7 @@ class State:
     #         self.features = self.features.numpy().flatten()
 
     # def calc_super_simple_features(self, convert_to_numpy=False):
-    #     features = np.zeros(self.num_features, dtype=np.float32)
+    #     features = np.zeros(self.num_features, dtype=np.float_)
     #     features[[0, 2, 3]] = get_super_simple_jitted(lowest_free_rows=self.lowest_free_rows,
     #                                           representation=self.representation,
     #                                           num_columns=self.num_columns)
@@ -278,7 +303,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                 cell_below = 1
 
                 # Needed for hole_depth
-                number_of_full_cells_above = np.sum(col)
+                number_of_full_cells_above = numba_sum_int(col)
 
                 # There is at least one column_transition from the highest full cell to "the top".
                 column_transitions += 1
@@ -335,7 +360,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                 cell_below = 1
 
                 # Needed for hole_depth
-                number_of_full_cells_above = np.sum(col)
+                number_of_full_cells_above = numba_sum_int(col)
 
                 # There is at least one column_transition from the highest full cell to "the top".
                 column_transitions += 1
@@ -398,7 +423,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                 cell_below = 1
 
                 # Needed for hole_depth
-                number_of_full_cells_above = np.sum(col)
+                number_of_full_cells_above = numba_sum_int(col)
 
                 # There is at least one column_transition from the highest full cell to "the top".
                 column_transitions += 1

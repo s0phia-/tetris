@@ -83,9 +83,9 @@ class Node:
                                               for chil_ix, chil in enumerate(children_states)]
 
         # TODO: change priors from 1 to individual priors
-        self.child_priors[self.tetromino_name] = np.ones(self.num_children, dtype=np.float32)
-        self.child_total_value[self.tetromino_name] = np.zeros(self.num_children, dtype=np.float32)
-        self.child_number_visits[self.tetromino_name] = np.zeros(self.num_children, dtype=np.float32)
+        self.child_priors[self.tetromino_name] = np.ones(self.num_children, dtype=np.float_)
+        self.child_total_value[self.tetromino_name] = np.zeros(self.num_children, dtype=np.float_)
+        self.child_number_visits[self.tetromino_name] = np.zeros(self.num_children, dtype=np.float_)
 
     def backup(self, value_estimate):
         current = self
@@ -138,9 +138,9 @@ class NodeRAC(Node):
         #     # TODO updating move_indexes could be made more efficient!???
         #     for ix in range(self.num_children):
         #         self.children[self.tetromino_name][ix].move_index = ix
-        self.child_priors[self.tetromino_name] = np.ones(self.num_children, dtype=np.float32)
-        self.child_total_value[self.tetromino_name] = np.zeros(self.num_children, dtype=np.float32)
-        self.child_number_visits[self.tetromino_name] = np.zeros(self.num_children, dtype=np.float32)
+        self.child_priors[self.tetromino_name] = np.ones(self.num_children, dtype=np.float_)
+        self.child_total_value[self.tetromino_name] = np.zeros(self.num_children, dtype=np.float_)
+        self.child_number_visits[self.tetromino_name] = np.zeros(self.num_children, dtype=np.float_)
 
     def filter(self):
         #TODO:  Filter terminal states.

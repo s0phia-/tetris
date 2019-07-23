@@ -1,4 +1,5 @@
 import numpy as np
+from numba import njit
 from tetris import state
 
 
@@ -45,7 +46,7 @@ class Straight(Tetromino):
             anchor_row = free_pos
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] += 4
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
                 new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
@@ -53,7 +54,7 @@ class Straight(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 4),
                                         pieces_per_changed_row=np.array([1, 1, 1, 1]),
                                         landing_height_bonus=1.5, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
 
             # Horizontal placements
@@ -63,7 +64,7 @@ class Straight(Tetromino):
                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 4)])
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix:(col_ix + 4)] = anchor_row + 1
-                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 4)] = 1
                     new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
@@ -71,7 +72,7 @@ class Straight(Tetromino):
                                             changed_lines=np.arange(anchor_row, anchor_row + 1),
                                             pieces_per_changed_row=np.array([4]),
                                             landing_height_bonus=0, num_features=self.num_features,
-                                            feature_type=self.feature_type)
+                                            feature_type=0)
                     after_states.append(new_state)
         return after_states
 
@@ -93,7 +94,7 @@ class Square(Tetromino):
             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 2), col_ix:(col_ix + 2)] = 1
                 new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
@@ -101,7 +102,7 @@ class Square(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 2),
                                         pieces_per_changed_row=np.array([2, 2]),
                                         landing_height_bonus=0.5, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
         return after_states
 
@@ -125,7 +126,7 @@ class SnakeR(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
@@ -134,7 +135,7 @@ class SnakeR(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 2),
                                         pieces_per_changed_row=np.array([1, 2]),
                                         landing_height_bonus=1, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
 
             # Horizontal placements
@@ -145,7 +146,7 @@ class SnakeR(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix] = anchor_row + 1
                 new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 2
-                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
                     new_representation[anchor_row + 1, (col_ix + 1):(col_ix + 3)] = 1
@@ -154,7 +155,7 @@ class SnakeR(Tetromino):
                                             changed_lines=np.arange(anchor_row, anchor_row + 1),
                                             pieces_per_changed_row=np.array([2]),
                                             landing_height_bonus=0.5, num_features=self.num_features,
-                                            feature_type=self.feature_type)
+                                            feature_type=0)
                     after_states.append(new_state)
         return after_states
 
@@ -177,7 +178,7 @@ class SnakeL(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 2
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 2), col_ix] = 1
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix + 1] = 1
@@ -186,7 +187,7 @@ class SnakeL(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 2),
                                         pieces_per_changed_row=np.array([1, 2]),
                                         landing_height_bonus=1, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
 
             ## Horizontal placements
@@ -197,7 +198,7 @@ class SnakeL(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
                 new_lowest_free_rows[col_ix + 2] = anchor_row + 1
-                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, (col_ix + 1):(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
@@ -206,7 +207,7 @@ class SnakeL(Tetromino):
                                             changed_lines=np.arange(anchor_row, anchor_row + 1),
                                             pieces_per_changed_row=np.array([2]),
                                             landing_height_bonus=0.5, num_features=self.num_features,
-                                            feature_type=self.feature_type)
+                                            feature_type=0)
                     after_states.append(new_state)
         return after_states
 
@@ -230,7 +231,7 @@ class T(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 2
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 1, col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
@@ -239,7 +240,7 @@ class T(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 2),
                                         pieces_per_changed_row=np.array([1, 2]),
                                         landing_height_bonus=1, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
 
             # Single cell on right
@@ -247,7 +248,7 @@ class T(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row + 1, col_ix + 1] = 1
@@ -256,7 +257,7 @@ class T(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 2),
                                         pieces_per_changed_row=np.array([1, 2]),
                                         landing_height_bonus=1, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
 
             if col_ix < self.num_columns - 2:
@@ -268,7 +269,7 @@ class T(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[[col_ix, col_ix + 2]] = anchor_row + 1
                 new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix + 1] = 1
@@ -277,14 +278,14 @@ class T(Tetromino):
                                             changed_lines=np.arange(anchor_row, anchor_row + 1),
                                             pieces_per_changed_row=np.array([3]),
                                             landing_height_bonus=0.5, num_features=self.num_features,
-                                            feature_type=self.feature_type)
+                                            feature_type=0)
                     after_states.append(new_state)
 
                 # T
                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix + 1], np.max(current_state.lowest_free_rows[[col_ix, col_ix + 2]]) - 1)
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix + 1] = 1
@@ -293,7 +294,7 @@ class T(Tetromino):
                                             changed_lines=np.arange(anchor_row, anchor_row + 2),
                                             pieces_per_changed_row=np.array([1, 3]),
                                             landing_height_bonus=0.5, num_features=self.num_features,
-                                            feature_type=self.feature_type)
+                                            feature_type=0)
                     after_states.append(new_state)
         return after_states
 
@@ -316,7 +317,7 @@ class RCorner(Tetromino):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 2, current_state.lowest_free_rows[col_ix + 1])
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 2, col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
@@ -325,7 +326,7 @@ class RCorner(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 3),
                                         pieces_per_changed_row=np.array([1, 1, 2]),
                                         landing_height_bonus=1, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
 
             # Bottom-left corner
@@ -333,7 +334,7 @@ class RCorner(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 1
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row, col_ix + 1] = 1
@@ -342,7 +343,7 @@ class RCorner(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 1),
                                         pieces_per_changed_row=np.array([2]),
                                         landing_height_bonus=1, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
 
             if col_ix < self.num_columns - 2:
@@ -354,7 +355,7 @@ class RCorner(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1
                 new_lowest_free_rows[col_ix + 2] = anchor_row + 2
-                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix + 2] = 1
@@ -363,14 +364,14 @@ class RCorner(Tetromino):
                                             changed_lines=np.arange(anchor_row, anchor_row + 1),
                                             pieces_per_changed_row=np.array([3]),
                                             landing_height_bonus=0.5, num_features=self.num_features,
-                                            feature_type=self.feature_type)
+                                            feature_type=0)
                     after_states.append(new_state)
 
                 # Top-left corner
                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]) - 1)
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix] = 1
@@ -379,7 +380,7 @@ class RCorner(Tetromino):
                                             changed_lines=np.arange(anchor_row, anchor_row + 2),
                                             pieces_per_changed_row=np.array([1, 3]),
                                             landing_height_bonus=0.5, num_features=self.num_features,
-                                            feature_type=self.feature_type)
+                                            feature_type=0)
                     after_states.append(new_state)
         return after_states
 
@@ -402,7 +403,7 @@ class LCorner(Tetromino):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 2)
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 2, col_ix + 1] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
@@ -411,7 +412,7 @@ class LCorner(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 3),
                                         pieces_per_changed_row=np.array([1, 1, 2]),
                                         landing_height_bonus=1, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
 
             # Bottom-right corner
@@ -419,7 +420,7 @@ class LCorner(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
             new_lowest_free_rows[col_ix] = anchor_row + 1
-            if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
                 new_representation[anchor_row, col_ix] = 1
@@ -428,7 +429,7 @@ class LCorner(Tetromino):
                                         changed_lines=np.arange(anchor_row, anchor_row + 1),
                                         pieces_per_changed_row=np.array([2]),
                                         landing_height_bonus=1, num_features=self.num_features,
-                                        feature_type=self.feature_type)
+                                        feature_type=0)
                 after_states.append(new_state)
 
 
@@ -441,7 +442,7 @@ class LCorner(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix] = anchor_row + 2
                 new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 1
-                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix] = 1
@@ -450,14 +451,14 @@ class LCorner(Tetromino):
                                             changed_lines=np.arange(anchor_row, anchor_row + 1),
                                             pieces_per_changed_row=np.array([3]),
                                             landing_height_bonus=0.5, num_features=self.num_features,
-                                            feature_type=self.feature_type)
+                                            feature_type=0)
                     after_states.append(new_state)
 
                 # Top-right corner
                 anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]) - 1, current_state.lowest_free_rows[col_ix + 2])
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not np.any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix + 2] = 1
@@ -466,6 +467,69 @@ class LCorner(Tetromino):
                                             changed_lines=np.arange(anchor_row, anchor_row + 2),
                                             pieces_per_changed_row=np.array([1, 3]),
                                             landing_height_bonus=0.5, num_features=self.num_features,
-                                            feature_type=self.feature_type)
+                                            feature_type=0)
                     after_states.append(new_state)
         return after_states
+
+
+@njit
+def numba_any(arr):
+    found = False
+    i = 0
+    arr_len = len(arr)
+    while not found and i < arr_len:
+        if arr[i]:
+            found = True
+        i += 1
+    return found
+
+
+
+# @njit
+# def numba_any_break(arr):
+#     found = False
+#     for i in arr:
+#         if i:
+#             found = True
+#             break
+#     return found
+
+
+# arr = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False])
+# numba_any(arr)
+#
+# setup = '''
+# import numpy as np
+# from numba import njit
+#
+# @njit
+# def numba_any(arr):
+#     found = False
+#     i = 0
+#     arr_len = len(arr)
+#     while not found and i < arr_len:
+#         if arr[i]:
+#             found = True
+#         i += 1
+#     return found
+#
+#
+#
+# @njit
+# def numba_any_break(arr):
+#     found = False
+#     for i in arr:
+#         if i:
+#             found = True
+#             break
+#     return found
+#
+# arr = np.array([False, False, False, False, True, False, False, False, False, False, False, False, False])
+# numba_any_break(arr)
+# numba_any(arr)
+#
+# '''
+# import timeit
+#
+# timeit.timeit('numba_any(arr)', setup=setup, number=10000000)
+# timeit.timeit('numba_any_break(arr)', setup=setup, number=10000000)

@@ -26,7 +26,7 @@ class Tetris:
                  num_rows,
                  verbose=False,
                  tetromino_size=4,
-                 feature_type="bcts",
+                 feature_type=0,
                  num_features=8,
                  max_cleared_test_lines=np.inf):
         """
@@ -50,7 +50,7 @@ class Tetris:
         self.game_over = False
         self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int_),
                                          lowest_free_rows=np.zeros(self.num_columns, dtype=np.int_), num_features=self.num_features,
-                                         feature_type=self.feature_type)
+                                         feature_type=0)
         self.tetrominos = [tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
                            tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
                            tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
@@ -67,7 +67,7 @@ class Tetris:
         self.game_over = False
         self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int_),
                                          lowest_free_rows=np.zeros(self.num_columns, dtype=np.int_), num_features=self.num_features,
-                                         feature_type=self.feature_type)
+                                         feature_type=0)
         self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
         self.cleared_lines = 0
 

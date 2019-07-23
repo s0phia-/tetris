@@ -87,7 +87,7 @@ def f_pyt_all(after_states, agent):
     values = values.numpy().flatten()
 
 def f_np(after_states, agent):
-    features = np.zeros((len(after_states), 8), dtype=np.float32)
+    features = np.zeros((len(after_states), 8), dtype=np.float_)
     for ix, after_state in enumerate(after_states):
         features[ix] = after_state.features
     values = features.dot(agent.mlp.state_dict()['0.weight'].numpy()[0])
@@ -98,7 +98,7 @@ def f_np(after_states, agent):
 
 # @njit
 # def f_nb(after_states, weights):
-#     values = np.zeros(len(after_states), dtype=np.float32)
+#     values = np.zeros(len(after_states), dtype=np.float_)
 #     for ix, after_state in enumerate(after_states):
 #         features = after_state.features[0]
 #         v = 0.0
