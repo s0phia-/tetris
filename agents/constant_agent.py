@@ -8,7 +8,7 @@ class ConstantAgent:
         self.feature_type = feature_type
         self.num_features = len(self.policy_weights)
         if feature_directors is None:
-            if self.feature_type == 'bcts':
+            if self.feature_type == 0:
                 print("Features are directed automatically to be BCTS features.")
                 self.feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1])
         else:
@@ -26,7 +26,7 @@ class ConstantAgent:
             return TerminalState(), 0
         action_features = np.zeros((num_children, self.num_features))
         for ix, after_state in enumerate(children_states):
-            action_features[ix] = after_state.get_features(direct_by=self.feature_directors, order_by=None)
+            action_features[ix] = after_state.get_features(direct_by=self.feature_directors)  # , order_by=None , addRBF=False
         utilities = action_features.dot(self.policy_weights)
         max_indices = np.where(utilities == np.max(utilities))[0]
         move_index = np.random.choice(max_indices)
@@ -45,7 +45,7 @@ class ConstantAgent:
             return TerminalState(), 0
         action_features = np.zeros((num_children, self.num_features))
         for ix, after_state in enumerate(children_states):
-            action_features[ix] = after_state.get_features(direct_by=self.feature_directors, order_by=None)
+            action_features[ix] = after_state.get_features(self.feature_directors, False)  # direct_by=self.feature_directors  , order_by=None  , addRBF=False
         utilities = action_features.dot(self.policy_weights)
         max_indices = np.where(utilities == np.max(utilities))[0]
         move_index = np.random.choice(max_indices)

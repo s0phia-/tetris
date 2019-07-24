@@ -15,7 +15,7 @@ spec = [
     ('lowest_free_rows', int64[:]),
     ('anchor_col', int64),
     ('changed_lines', int64[:]),
-    ('pieces_per_changed_row', float64[:]),
+    ('pieces_per_changed_row', int64[:]),
     ('landing_height_bonus', float64),
     ('num_features', int64),
     ('feature_type', int64),
@@ -24,7 +24,8 @@ spec = [
     ('n_legal_rows', int64),
     ('n_cleared_lines', int64),
     ('anchor_row', int64),
-    ('cleared_rows_relative_to_anchor', bool_),
+    ('cleared_rows_relative_to_anchor', bool_[:]),
+    ('features_are_calculated', bool_),
     ('features', float64[:]),
     ('terminal_state', bool_),
     ('reward', int64),
@@ -33,36 +34,37 @@ spec = [
 
 
 @jitclass(spec)
-class State:
+class State(object):
     def __init__(self,
                  representation,
-                 lowest_free_rows=None,
+                 lowest_free_rows,
                  anchor_col=0,
-                 changed_lines=np.arange(1),
-                 pieces_per_changed_row=np.array([0]),
+                 changed_lines=np.array([0], dtype=np.int64),
+                 pieces_per_changed_row=np.array([0], dtype=np.int64),
                  landing_height_bonus=0.0,
                  num_features=8,
                  feature_type=0):
         self.representation = representation
-        if lowest_free_rows is None:
-            raise ValueError("Should not calc_lowest_free_rows.")
-            self.lowest_free_rows = calc_lowest_free_rows(self.representation)
-        else:
-            self.lowest_free_rows = lowest_free_rows
+        # if lowest_free_rows is None:
+        #     raise ValueError("Should not calc_lowest_free_rows.")
+        #     self.lowest_free_rows = calc_lowest_free_rows(self.representation)
+        # else:
+        self.lowest_free_rows = lowest_free_rows
         self.anchor_col = anchor_col
         self.num_rows = self.representation.shape[0]
         self.num_columns = self.representation.shape[1]
         self.pieces_per_changed_row = pieces_per_changed_row
         self.landing_height_bonus = landing_height_bonus
         self.num_features = num_features
-        self.feature_type = "bcts"
+        self.feature_type = 0  # "bcts"
 
         self.n_legal_rows = self.num_rows - 4
         self.n_cleared_lines = 0
         self.anchor_row = changed_lines[0]
         self.cleared_rows_relative_to_anchor = self.clear_lines(changed_lines=changed_lines)
 
-        self.features = None
+        self.features_are_calculated = False
+        self.features = np.zeros(self.num_features, dtype=np.float64)
         # self.terminal_state = check_terminal(self.representation, self.n_legal_rows)  # self.is_terminal()
         # Don't create terminal states in the first place now...
         self.terminal_state = False
@@ -72,18 +74,27 @@ class State:
     # def __repr__(self):
     #     return self.print_board_to_string()
 
-    def get_features(self, direct_by=None, order_by=None, standardize_by=None, addRBF=False):
-        if self.features is None:
+    def get_features(self, direct_by, addRBF=False):  #, order_by=None, standardize_by=None, addRBF=False
+        if not self.features_are_calculated:
             self.calc_feature_values()
-        features = self.features
-        if order_by is not None:
-            features = features[order_by]
-        if direct_by is not None:
-            features = features * direct_by
-        if standardize_by is not None:
-            features = features / standardize_by
+            self.features_are_calculated = True
+        # if self.features is None:
+        #     self.calc_feature_values()
+        # TODO: check whether copy is needed here.
+        features = self.features.copy()
+        features = features * direct_by
+        # if order_by is not None:
+        #     features = features[order_by]
+        # if direct_by is not None:
+        #     features = features * direct_by
+        # if standardize_by is not None:
+        #     features = features / standardize_by
         if addRBF:
-            features = np.append(features, np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.n_legal_rows / 4)**2 / (2*(self.n_legal_rows / 5)**2)))
+            # RBF_features = np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.n_legal_rows / 4)**2 / (2*(self.n_legal_rows / 5)**2))
+            # features = np.append(features, np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.n_legal_rows / 4)**2 / (2*(self.n_legal_rows / 5)**2)))
+            #TODO: check whether concat does same as append here
+            features = np.concatenate((features, np.exp(
+                -(np.mean(self.lowest_free_rows) - np.arange(5) * self.n_legal_rows / 4) ** 2 / (2 * (self.n_legal_rows / 5) ** 2))))
         return features
 
     # TODO: Implement order / directions...
@@ -133,16 +144,16 @@ class State:
         return is_full
 
     def calc_feature_values(self):
-        if self.feature_type == 'bcts':
+        if self.feature_type == 0:
             self.calc_bcts_features()
-        elif self.feature_type == 'super_simple':
-            self.calc_super_simple_features()
-        # elif self.feature_type == "adjusted_bcts":
-        #     self.calc_bcts_features(standardize_by=self.feature_stds)
-        elif self.feature_type == 'simple':
-            self.calc_simple_features()
-        elif self.feature_type == "standardized_bcts":
-            self.calc_standardized_bcts_features()
+        # elif self.feature_type == 'super_simple':
+        #     self.calc_super_simple_features()
+        # # elif self.feature_type == "adjusted_bcts":
+        # #     self.calc_bcts_features(standardize_by=self.feature_stds)
+        # elif self.feature_type == 'simple':
+        #     self.calc_simple_features()
+        # elif self.feature_type == "standardized_bcts":
+        #     self.calc_standardized_bcts_features()
         else:
             raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
 
@@ -152,10 +163,21 @@ class State:
         n_cleared_lines = numba_sum_int(self.cleared_rows_relative_to_anchor)
         features[6] = eroded_pieces * n_cleared_lines
         features[3] = self.anchor_row + self.landing_height_bonus
-        features[[0, 1, 2, 4, 5, 7]] = get_feature_values_jitted(lowest_free_rows=self.lowest_free_rows,
+        # print(self.num_columns)
+        # print(type(self.num_columns))
+        tmp_feature_values = get_feature_values_jitted(lowest_free_rows=self.lowest_free_rows,
                                                                  representation=self.representation,
                                                                  num_rows=self.n_legal_rows,
                                                                  num_columns=self.num_columns)
+        # features[[0, 1, 2, 4, 5, 7]]
+        features[0] = tmp_feature_values[0]
+        features[1] = tmp_feature_values[1]
+        features[2] = tmp_feature_values[2]
+        features[4] = tmp_feature_values[3]
+        features[5] = tmp_feature_values[4]
+        features[7] = tmp_feature_values[5]
+
+        # features[[0, 1, 2, 4, 5, 7]] = get_feature_values_jitted(self.lowest_free_rows, self.representation, self.n_legal_rows, self.num_columns)
         self.features = features
         # ['rows_with_holes', 'column_transitions', 'holes', 'landing_height', 'cumulative_wells',
         #                  'row_transitions', 'eroded', 'hole_depth']
@@ -225,7 +247,7 @@ def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_colu
         mask_keep = np.ones(len(representation), dtype=np.bool_)
         mask_keep[lines_to_clear] = False
         representation = np.vstack((representation[mask_keep],
-                                    np.zeros((n_cleared_lines, num_columns), dtype=np.int_)))
+                                    np.zeros((n_cleared_lines, num_columns), dtype=np.int64)))
         for col_ix in range(num_columns):  # col_ix = 0
             old_lowest_free_row = lowest_free_rows[col_ix]
             if old_lowest_free_row > lines_to_clear[-1] + 1:

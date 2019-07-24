@@ -85,7 +85,7 @@ class Cbmpi:
         self.state_action_values = np.zeros((self.N, 34), dtype=np.float)
         # self.state_action_features = []
         self.state_action_features = np.zeros((self.N, 34, self.num_features))
-        self.num_available_actions = np.zeros(self.N, dtype=int)
+        self.num_available_actions = np.zeros(self.N, dtype=np.int64)
         self.did_rollout = np.ones(self.N, dtype=bool)
         for ix, rollout_state in enumerate(self.D_k):
             # if ix % 5000 == 0 and self.verbose:

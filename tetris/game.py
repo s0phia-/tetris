@@ -48,8 +48,9 @@ class Tetris:
         self.feature_type = feature_type
         self.num_fields = self.num_columns * self.num_rows
         self.game_over = False
-        self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int_),
-                                         lowest_free_rows=np.zeros(self.num_columns, dtype=np.int_), num_features=self.num_features,
+        self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int64),
+                                         lowest_free_rows=np.zeros(self.num_columns, dtype=np.int64),
+                                         num_features=self.num_features,
                                          feature_type=0)
         self.tetrominos = [tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
                            tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
@@ -65,8 +66,9 @@ class Tetris:
 
     def reset(self):
         self.game_over = False
-        self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int_),
-                                         lowest_free_rows=np.zeros(self.num_columns, dtype=np.int_), num_features=self.num_features,
+        self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int64),
+                                         lowest_free_rows=np.zeros(self.num_columns, dtype=np.int64),
+                                         num_features=self.num_features,
                                          feature_type=0)
         self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
         self.cleared_lines = 0
