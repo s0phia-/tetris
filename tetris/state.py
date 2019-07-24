@@ -450,8 +450,13 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                             local_well_streak = 0
                     else:
                         local_well_streak = 0
-            if lowest_free_row_left > max_well_possibility > lowest_free_row:
-                for row_ix in range(max_well_possibility, lowest_free_row_left):
+                if lowest_free_row_left > max_well_possibility:
+                    for row_ix in range(max_well_possibility, lowest_free_row_left):
+                        cell_left = representation[row_ix, col_ix - 1]
+                        if cell_left:
+                            row_transitions += 1
+            elif lowest_free_row_left > lowest_free_row:
+                for row_ix in range(lowest_free_row, lowest_free_row_left):
                     cell_left = representation[row_ix, col_ix - 1]
                     if cell_left:
                         row_transitions += 1
