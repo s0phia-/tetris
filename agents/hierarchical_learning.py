@@ -18,7 +18,7 @@ import time
 
 
 
-# @njit
+# # @njit
 # def policy_loss_function_jit(pol_weights, N, state_action_features, state_action_values):
 #     loss = 0.
 #     number_of_samples = 0
@@ -417,7 +417,7 @@ class HierarchicalLearner:
         return move, move_index
 
 
-@njit
+# @njit
 def flip_positive_direction_counts(positive_direction_counts, meaningful_comparisons, feature_directors):
     for ix in range(len(positive_direction_counts)):
         if feature_directors[ix] == -1.:

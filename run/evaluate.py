@@ -1,6 +1,7 @@
 
 def evaluate(env, agent, hard_test=False, visualize=False, clear_the_output=False, sleep=0.01):
     env.reset()
+    env.print_board_to_string(env.current_state, clear_the_output, sleep)
     while not env.game_over and env.cleared_lines <= env.max_cleared_test_lines:
         current_tetromino = env.tetromino_sampler.next_tetromino()
         if hard_test:
@@ -8,8 +9,8 @@ def evaluate(env, agent, hard_test=False, visualize=False, clear_the_output=Fals
         else:
             chosen_action, move_index = agent.choose_action_test(start_state=env.current_state, start_tetromino=current_tetromino)
         env.make_step(chosen_action)
-        if visualize and not chosen_action.terminal_state:
-            env.print_board_to_string(chosen_action, clear_the_output, sleep)
+        if visualize and not env.current_state.terminal_state:
+            env.print_board_to_string(env.current_state, clear_the_output, sleep)
     return env.cleared_lines
 
 
@@ -28,7 +29,7 @@ rewards = np.zeros(100)
 for i in range(100):
     env = tetris.Tetris(num_columns=10, num_rows=10, verbose=True)
     agent = ConstantAgent(policy_weights=np.ones(8))
-    rewards[i] = evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0)
+    rewards[i] = evaluate(env, agent, visualize=True, clear_the_output=False, sleep=0)
 
 end = time.time()
 print("Took ", end - start, " seconds.")

@@ -4,8 +4,6 @@ import pprint
 import collections
 import time
 import copy
-# feature_names = ["holes", "cumulative_wells", "cumulative_wells_squared",
-#                  "landing_height", "avg_free_row", "avg_free_row_squared", "n_landing_positions"]
 
 from IPython.display import clear_output
 import time
@@ -53,13 +51,15 @@ class Tetris:
                                          lowest_free_rows=np.zeros(self.num_columns, dtype=np.int64),
                                          num_features=self.num_features,
                                          feature_type="bcts")
-        self.tetrominos = [tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.Square(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.SnakeR(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.SnakeL(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.T(self.feature_type, self.num_features, self.num_columns)]
+        self.tetrominos = [
+            # tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
+            # tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
+            # tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
+            # tetromino.Square(self.feature_type, self.num_features, self.num_columns),
+            # tetromino.SnakeR(self.feature_type, self.num_features, self.num_columns),
+            # tetromino.SnakeL(self.feature_type, self.num_features, self.num_columns),
+            tetromino.T(self.feature_type, self.num_features, self.num_columns)]
+
         self.tetromino_sampler = tetromino.TetrominoSamplerRandom(self.tetrominos)
         self.cleared_lines = 0
         self.cumulative_steps = 0

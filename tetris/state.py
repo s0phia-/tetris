@@ -22,6 +22,7 @@ spec = [
     ('num_columns', int64),
     ('n_legal_rows', int64),
     ('n_cleared_lines', int64),
+    ('changed_cols', int64[:]),
     ('anchor_row', int64),
     ('cleared_rows_relative_to_anchor', bool_[:]),
     ('features_are_calculated', bool_),
@@ -31,32 +32,44 @@ spec = [
     ('value_estimate', float64)
 ]
 
+# FOR SET: numba.types.containers.Set
 
-@jitclass(spec)
+
+# @jitclass(spec)
 class State(object):
     def __init__(self,
                  representation,
                  lowest_free_rows,
-                 anchor_col=0,
+                 changed_cols=np.array([0], dtype=np.int64),
                  changed_lines=np.array([0], dtype=np.int64),
                  pieces_per_changed_row=np.array([0], dtype=np.int64),
                  landing_height_bonus=0.0,
                  num_features=8,
                  feature_type="bcts",
-                 previous_feature_values=np.zeros(1, dtype=np.float64)):
+                 previous_feature_values=np.zeros(1, dtype=np.float64),
+                 previous_set_of_rows_with_holes={},
+                 previous_holes_per_col=np.array([0], dtype=np.int64),
+                 previous_hole_depths_per_col=np.array([0], dtype=np.int64),
+                 previous_cumulative_wells_per_row=np.array([0], dtype=np.int64)):  # , previous_feature_values=np.zeros(1, dtype=np.float64)
         self.representation = representation
         # if lowest_free_rows is None:
         #     raise ValueError("Should not calc_lowest_free_rows.")
         #     self.lowest_free_rows = calc_lowest_free_rows(self.representation)
         # else:
         self.lowest_free_rows = lowest_free_rows
-        self.anchor_col = anchor_col
+        self.changed_cols = changed_cols
+        self.anchor_col = changed_cols[0]
         self.num_rows = self.representation.shape[0]
         self.num_columns = self.representation.shape[1]
         self.pieces_per_changed_row = pieces_per_changed_row
         self.landing_height_bonus = landing_height_bonus
         self.num_features = num_features
         self.feature_type = feature_type  # "bcts"
+        self.previous_feature_values = previous_feature_values
+        self.previous_set_of_rows_with_holes = previous_set_of_rows_with_holes
+        self.previous_holes_per_col = previous_holes_per_col
+        self.previous_hole_depths_per_col = previous_hole_depths_per_col
+        self.previous_cumulative_wells_per_row = previous_cumulative_wells_per_row
 
         self.n_legal_rows = self.num_rows - 4
         self.n_cleared_lines = 0
@@ -76,6 +89,7 @@ class State(object):
 
     def get_features(self, direct_by, addRBF=False):  #, order_by=None, standardize_by=None, addRBF=False
         if not self.features_are_calculated:
+            # print("here")
             self.calc_feature_values()
             self.features_are_calculated = True
         # if self.features is None:
@@ -112,10 +126,11 @@ class State(object):
 
     def calc_feature_values(self):
         if self.feature_type == "bcts":
-            if self.n_cleared_lines > 0:
+            # if self.n_cleared_lines > 0:
                 self.calc_bcts_features()
-            else:
-                self.update_bcts_feature_values()
+            # else:
+            #     self.update_bcts_features()
+
         # elif self.feature_type == 'super_simple':
         #     self.calc_super_simple_features()
         # # elif self.feature_type == "adjusted_bcts":
@@ -126,6 +141,12 @@ class State(object):
         #     self.calc_standardized_bcts_features()
         else:
             raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
+
+    # def update_bcts_features(self, old_feature_values, old_rows_with_holes):
+    #     pass
+
+    def update_bcts_features(self):
+        pass
 
     def calc_bcts_features(self):
         features = np.zeros(self.num_features, dtype=np.float_)
@@ -152,7 +173,7 @@ class State(object):
         # self.features = features / np.array([2.18246089, 4.42735771, 3.0698914, 2.31688581, 3.1093846, 4.0334024, 0.46720078, 8.35394364])
 
 
-@njit(fastmath=True, cache=True)
+# @njit(fastmath=True, cache=True)
 def check_terminal(representation, n_legal_rows):
     is_terminal = False
     for ix in representation[n_legal_rows]:
@@ -162,7 +183,7 @@ def check_terminal(representation, n_legal_rows):
     return is_terminal
 
 
-@njit(fastmath=True, cache=True)
+# @njit(fastmath=True, cache=True)
 def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_columns):
     row_sums = np.sum(representation[changed_lines, :], axis=1)
     is_full = row_sums == num_columns
@@ -188,7 +209,7 @@ def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_colu
     return is_full, n_cleared_lines, representation, lowest_free_rows
 
 
-@njit(fastmath=True, cache=True)
+# @njit(fastmath=True, cache=True)
 def numba_sum_int(int_arr):
     acc = 0
     for i in int_arr:
@@ -196,7 +217,7 @@ def numba_sum_int(int_arr):
     return acc
 
 
-@njit(fastmath=True, cache=True)
+# @njit(fastmath=True, cache=True)
 def numba_sum(arr):
     acc = 0.
     for i in arr:
@@ -204,7 +225,7 @@ def numba_sum(arr):
     return acc
 
 
-@njit(fastmath=True, cache=True)
+# @njit(fastmath=True, cache=True)
 def minmaxavg_jitted(x):
     maximum = x[0]
     minimum = x[0]
@@ -219,7 +240,7 @@ def minmaxavg_jitted(x):
     return minimum, maximum, summed
 
 
-@njit(fastmath=True, cache=True)
+# @njit(fastmath=True, cache=True)
 def calc_lowest_free_rows(rep):
     num_rows, n_cols = rep.shape
     lowest_free_rows = np.zeros(n_cols, dtype=np.int_)
@@ -233,7 +254,7 @@ def calc_lowest_free_rows(rep):
     return lowest_free_rows
 
 
-@njit(fastmath=True, cache=True)
+# @njit(fastmath=True, cache=True)
 def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_columns):
     rows_with_holes_set = {100}
     column_transitions = 0
@@ -244,6 +265,8 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
     # eroded_piece_cells
     hole_depth = 0
     for col_ix, lowest_free_row in enumerate(lowest_free_rows):
+        # There is at least one column_transition from the highest full cell (or the bottom which is assumed to be full) to "the top".
+        column_transitions += 1
         if col_ix == 0:
             local_well_streak = 0
             if lowest_free_row > 0:
@@ -253,8 +276,6 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                 # Needed for hole_depth
                 number_of_full_cells_above = numba_sum_int(col)
 
-                # There is at least one column_transition from the highest full cell to "the top".
-                column_transitions += 1
                 for row_ix, cell in enumerate(col):
                     if cell == 0:
                         # Holes
@@ -310,8 +331,6 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                 # Needed for hole_depth
                 number_of_full_cells_above = numba_sum_int(col)
 
-                # There is at least one column_transition from the highest full cell to "the top".
-                column_transitions += 1
                 for row_ix, cell in enumerate(col):
                     if cell == 0:
                         # Holes
@@ -373,8 +392,6 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                 # Needed for hole_depth
                 number_of_full_cells_above = numba_sum_int(col)
 
-                # There is at least one column_transition from the highest full cell to "the top".
-                column_transitions += 1
                 for row_ix, cell in enumerate(col):
                     if cell == 0:
                         # Holes
@@ -449,7 +466,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
 
 
 
-# @njit
+# # @njit
 # def get_super_simple_jitted(lowest_free_rows, representation, num_columns):  # anchor_row, landing_height_bonus, num_rows,
 #     holes = 0.0
 #     cumulative_wells = 0.0
@@ -514,7 +531,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
 
 
 
-# @njit
+# # @njit
 # def get_relevant_holes_jitted4(lowest_free_rows, representation, anchor_row, landing_height_bonus, num_rows, num_columns):
 #     holes = 0.0
 #     cumulative_wells = 0.0
