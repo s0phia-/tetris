@@ -1,7 +1,6 @@
 import numpy as np
+import numba
 from numba import njit, jitclass, float64, int64, bool_
-from IPython.display import clear_output
-import time
 # import torch
 
 
@@ -18,7 +17,7 @@ spec = [
     ('pieces_per_changed_row', int64[:]),
     ('landing_height_bonus', float64),
     ('num_features', int64),
-    ('feature_type', int64),
+    ('feature_type', numba.types.string),
     ('num_rows', int64),
     ('num_columns', int64),
     ('n_legal_rows', int64),
@@ -43,7 +42,8 @@ class State(object):
                  pieces_per_changed_row=np.array([0], dtype=np.int64),
                  landing_height_bonus=0.0,
                  num_features=8,
-                 feature_type=0):
+                 feature_type="bcts",
+                 previous_feature_values=np.zeros(1, dtype=np.float64)):
         self.representation = representation
         # if lowest_free_rows is None:
         #     raise ValueError("Should not calc_lowest_free_rows.")
@@ -56,7 +56,7 @@ class State(object):
         self.pieces_per_changed_row = pieces_per_changed_row
         self.landing_height_bonus = landing_height_bonus
         self.num_features = num_features
-        self.feature_type = 0  # "bcts"
+        self.feature_type = feature_type  # "bcts"
 
         self.n_legal_rows = self.num_rows - 4
         self.n_cleared_lines = 0
@@ -103,39 +103,6 @@ class State(object):
     #         self.calc_feature_values()
     #     return np.insert(self.features, obj=0, values=1.)
 
-    # def print_board(self, clear_the_output=False):
-    #     if clear_the_output:
-    #         clear_output(wait=True)
-    #     for row_ix in range(self.n_legal_rows):
-    #         # Start from top
-    #         row_ix = self.n_legal_rows - row_ix - 1
-    #         print("|", end=' ')
-    #         for col_ix in range(self.num_columns):
-    #             if self.representation[row_ix, col_ix]:
-    #                 print("██", end=' ')
-    #             else:
-    #                 print("  ", end=' ')
-    #         print("|")
-    #
-    # def print_board_to_string(self, clear_the_output=False, sleep=0):
-    #     if clear_the_output:
-    #         clear_output(wait=True)
-    #     if sleep > 0:
-    #         time.sleep(sleep)
-    #     string = "\n"
-    #     for row_ix in range(self.n_legal_rows):
-    #         # Start from top
-    #         row_ix = self.n_legal_rows - row_ix - 1
-    #         string += "|"
-    #         for col_ix in range(self.num_columns):
-    #             if self.representation[row_ix, col_ix]:
-    #                 string += "██"
-    #             else:
-    #                 string += "  "
-    #         string += "|\n"
-    #     print(string)
-    #     return string
-
     def clear_lines(self, changed_lines):
         is_full, self.n_cleared_lines, self.representation, self.lowest_free_rows = clear_lines_jitted(changed_lines,
                                                                                                        self.representation,
@@ -144,8 +111,11 @@ class State(object):
         return is_full
 
     def calc_feature_values(self):
-        if self.feature_type == 0:
-            self.calc_bcts_features()
+        if self.feature_type == "bcts":
+            if self.n_cleared_lines > 0:
+                self.calc_bcts_features()
+            else:
+                self.update_bcts_feature_values()
         # elif self.feature_type == 'super_simple':
         #     self.calc_super_simple_features()
         # # elif self.feature_type == "adjusted_bcts":
@@ -161,10 +131,8 @@ class State(object):
         features = np.zeros(self.num_features, dtype=np.float_)
         eroded_pieces = numba_sum_int(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
         n_cleared_lines = numba_sum_int(self.cleared_rows_relative_to_anchor)
-        features[6] = eroded_pieces * n_cleared_lines
         features[3] = self.anchor_row + self.landing_height_bonus
-        # print(self.num_columns)
-        # print(type(self.num_columns))
+        features[6] = eroded_pieces * n_cleared_lines
         tmp_feature_values = get_feature_values_jitted(lowest_free_rows=self.lowest_free_rows,
                                                                  representation=self.representation,
                                                                  num_rows=self.n_legal_rows,
@@ -184,49 +152,7 @@ class State(object):
         # self.features = features / np.array([2.18246089, 4.42735771, 3.0698914, 2.31688581, 3.1093846, 4.0334024, 0.46720078, 8.35394364])
 
 
-    # def calc_standardized_bcts_features(self, convert_to_numpy=True, standardize=True):
-    #     features = np.zeros(self.num_features, dtype=np.float_)
-    #     eroded_pieces = np.sum(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
-    #     n_cleared_lines = np.sum(self.cleared_rows_relative_to_anchor)
-    #     features[0] = eroded_pieces * n_cleared_lines
-    #     features[2] = self.anchor_row + self.landing_height_bonus
-    #     features[[1, 3, 4, 5, 6, 7]] = get_feature_values_jitted(lowest_free_rows=self.lowest_free_rows,
-    #                                                              representation=self.representation,
-    #                                                              num_rows=self.n_legal_rows,
-    #                                                              num_columns=self.num_columns)
-    #     # ['eroded', 'rows_with_holes', 'landing_height', 'column_transitions', 'holes', 'cumulative_wells',
-    #     #  'row_transitions', 'hole_depth']
-    #     self.features = features / np.array([4.0334024, 2.18246089, 2.31688581, 4.42735771, 3.0698914, 3.1093846, 0.46720078, 8.35394364])
-
-    # def calc_simple_features(self, convert_to_numpy=False):
-    #     features = np.zeros(self.num_features, dtype=np.float_)
-    #     features[:] = get_relevant_holes_jitted4(lowest_free_rows=self.lowest_free_rows,
-    #                                              representation=self.representation,
-    #                                              anchor_row=self.anchor_row,
-    #                                              landing_height_bonus=self.landing_height_bonus,
-    #                                              num_rows=self.n_legal_rows,
-    #                                              num_columns=self.num_columns)
-    #     # holes, cumulative_wells, cumulative_wells_squared, landing_height, avg_free_row, avg_free_row_squared
-    #     # features[1] = self.anchor_row - np.min(self.lowest_free_rows) #  self.landing_height_bonus
-    #     # features[2] = np.mean(self.lowest_free_rows) ** 2 #  self.landing_height_bonus
-    #     self.features = torch.from_numpy(features).unsqueeze(0)
-    #     if convert_to_numpy:
-    #         self.features = self.features.numpy().flatten()
-
-    # def calc_super_simple_features(self, convert_to_numpy=False):
-    #     features = np.zeros(self.num_features, dtype=np.float_)
-    #     features[[0, 2, 3]] = get_super_simple_jitted(lowest_free_rows=self.lowest_free_rows,
-    #                                           representation=self.representation,
-    #                                           num_columns=self.num_columns)
-    #     eroded_pieces = np.sum(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
-    #     features[1] = eroded_pieces
-    #     self.features = features
-    #     # self.features = torch.from_numpy(features).unsqueeze(0)
-    #     # if convert_to_numpy:
-    #     #     self.features = self.features.numpy().flatten()
-
-
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def check_terminal(representation, n_legal_rows):
     is_terminal = False
     for ix in representation[n_legal_rows]:
@@ -236,7 +162,7 @@ def check_terminal(representation, n_legal_rows):
     return is_terminal
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_columns):
     row_sums = np.sum(representation[changed_lines, :], axis=1)
     is_full = row_sums == num_columns
@@ -262,7 +188,7 @@ def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_colu
     return is_full, n_cleared_lines, representation, lowest_free_rows
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def numba_sum_int(int_arr):
     acc = 0
     for i in int_arr:
@@ -270,7 +196,7 @@ def numba_sum_int(int_arr):
     return acc
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def numba_sum(arr):
     acc = 0.
     for i in arr:
@@ -278,7 +204,7 @@ def numba_sum(arr):
     return acc
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def minmaxavg_jitted(x):
     maximum = x[0]
     minimum = x[0]
@@ -293,7 +219,7 @@ def minmaxavg_jitted(x):
     return minimum, maximum, summed
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def calc_lowest_free_rows(rep):
     num_rows, n_cols = rep.shape
     lowest_free_rows = np.zeros(n_cols, dtype=np.int_)
@@ -307,7 +233,7 @@ def calc_lowest_free_rows(rep):
     return lowest_free_rows
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_columns):
     rows_with_holes_set = {100}
     column_transitions = 0
@@ -644,3 +570,48 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
 #     return features
 #
 
+
+
+###
+### Old methods for standardized bcts or completely different features
+###
+# def calc_standardized_bcts_features(self, convert_to_numpy=True, standardize=True):
+#     features = np.zeros(self.num_features, dtype=np.float_)
+#     eroded_pieces = np.sum(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
+#     n_cleared_lines = np.sum(self.cleared_rows_relative_to_anchor)
+#     features[0] = eroded_pieces * n_cleared_lines
+#     features[2] = self.anchor_row + self.landing_height_bonus
+#     features[[1, 3, 4, 5, 6, 7]] = get_feature_values_jitted(lowest_free_rows=self.lowest_free_rows,
+#                                                              representation=self.representation,
+#                                                              num_rows=self.n_legal_rows,
+#                                                              num_columns=self.num_columns)
+#     # ['eroded', 'rows_with_holes', 'landing_height', 'column_transitions', 'holes', 'cumulative_wells',
+#     #  'row_transitions', 'hole_depth']
+#     self.features = features / np.array([4.0334024, 2.18246089, 2.31688581, 4.42735771, 3.0698914, 3.1093846, 0.46720078, 8.35394364])
+
+# def calc_simple_features(self, convert_to_numpy=False):
+#     features = np.zeros(self.num_features, dtype=np.float_)
+#     features[:] = get_relevant_holes_jitted4(lowest_free_rows=self.lowest_free_rows,
+#                                              representation=self.representation,
+#                                              anchor_row=self.anchor_row,
+#                                              landing_height_bonus=self.landing_height_bonus,
+#                                              num_rows=self.n_legal_rows,
+#                                              num_columns=self.num_columns)
+#     # holes, cumulative_wells, cumulative_wells_squared, landing_height, avg_free_row, avg_free_row_squared
+#     # features[1] = self.anchor_row - np.min(self.lowest_free_rows) #  self.landing_height_bonus
+#     # features[2] = np.mean(self.lowest_free_rows) ** 2 #  self.landing_height_bonus
+#     self.features = torch.from_numpy(features).unsqueeze(0)
+#     if convert_to_numpy:
+#         self.features = self.features.numpy().flatten()
+
+# def calc_super_simple_features(self, convert_to_numpy=False):
+#     features = np.zeros(self.num_features, dtype=np.float_)
+#     features[[0, 2, 3]] = get_super_simple_jitted(lowest_free_rows=self.lowest_free_rows,
+#                                           representation=self.representation,
+#                                           num_columns=self.num_columns)
+#     eroded_pieces = np.sum(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
+#     features[1] = eroded_pieces
+#     self.features = features
+#     # self.features = torch.from_numpy(features).unsqueeze(0)
+#     # if convert_to_numpy:
+#     #     self.features = self.features.numpy().flatten()

@@ -8,12 +8,9 @@ def evaluate(env, agent, hard_test=False, visualize=False, clear_the_output=Fals
         else:
             chosen_action, move_index = agent.choose_action_test(start_state=env.current_state, start_tetromino=current_tetromino)
         env.make_step(chosen_action)
-        if visualize:
-            env.print_board_to_string(clear_the_output=clear_the_output, sleep=sleep)
+        if visualize and not chosen_action.terminal_state:
+            env.print_board_to_string(chosen_action, clear_the_output, sleep)
     return env.cleared_lines
-
-
-
 
 
 import tetris
@@ -25,6 +22,8 @@ from datetime import datetime
 time_id = datetime.now().strftime('%Y_%m_%d_%H_%M')
 np.random.seed(1)
 start = time.time()
+# rewards = np.zeros(2)
+# for i in range(2):
 rewards = np.zeros(100)
 for i in range(100):
     env = tetris.Tetris(num_columns=10, num_rows=10, verbose=True)

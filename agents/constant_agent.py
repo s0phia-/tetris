@@ -3,12 +3,12 @@ from tetris.state import TerminalState
 
 
 class ConstantAgent:
-    def __init__(self, policy_weights, feature_type=0, feature_directors=None):
+    def __init__(self, policy_weights, feature_type="bcts", feature_directors=None):
         self.policy_weights = policy_weights
         self.feature_type = feature_type
         self.num_features = len(self.policy_weights)
         if feature_directors is None:
-            if self.feature_type == 0:
+            if self.feature_type == "bcts":
                 print("Features are directed automatically to be BCTS features.")
                 self.feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1])
         else:
@@ -18,7 +18,7 @@ class ConstantAgent:
         """
         Chooses the utility-maximising action.
         """
-        children_states = start_tetromino.get_after_states(current_state=start_state)
+        children_states = start_tetromino.get_after_states(start_state) #, current_state=
         # available_after_states = np.array([child for child in all_available_after_states if not child.terminal_state])
         num_children = len(children_states)
         if num_children == 0:
@@ -37,7 +37,7 @@ class ConstantAgent:
         """
         Chooses the utility-maximising action.
         """
-        children_states = start_tetromino.get_after_states(current_state=start_state)
+        children_states = start_tetromino.get_after_states(start_state)  # , current_state=
         # available_after_states = np.array([child for child in all_available_after_states if not child.terminal_state])
         num_children = len(children_states)
         if num_children == 0:

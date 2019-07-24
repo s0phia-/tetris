@@ -7,7 +7,8 @@ import copy
 # feature_names = ["holes", "cumulative_wells", "cumulative_wells_squared",
 #                  "landing_height", "avg_free_row", "avg_free_row_squared", "n_landing_positions"]
 
-
+from IPython.display import clear_output
+import time
 
 
 class Tetris:
@@ -26,7 +27,7 @@ class Tetris:
                  num_rows,
                  verbose=False,
                  tetromino_size=4,
-                 feature_type=0,
+                 feature_type="bcts",
                  num_features=8,
                  max_cleared_test_lines=np.inf):
         """
@@ -51,7 +52,7 @@ class Tetris:
         self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int64),
                                          lowest_free_rows=np.zeros(self.num_columns, dtype=np.int64),
                                          num_features=self.num_features,
-                                         feature_type=0)
+                                         feature_type="bcts")
         self.tetrominos = [tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
                            tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
                            tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
@@ -69,7 +70,7 @@ class Tetris:
         self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int64),
                                          lowest_free_rows=np.zeros(self.num_columns, dtype=np.int64),
                                          num_features=self.num_features,
-                                         feature_type=0)
+                                         feature_type="bcts")
         self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
         self.cleared_lines = 0
 
@@ -83,11 +84,44 @@ class Tetris:
             self.cleared_lines += action.n_cleared_lines
             self.current_state = action
 
-    def print_board(self, clear_the_output=True):
-        self.current_state.print_board(clear_the_output=clear_the_output)
+    # def print_board(self, clear_the_output=True):
+    #     self.current_state.print_board(clear_the_output=clear_the_output)
 
-    def print_board_to_string(self, clear_the_output=True, sleep=0):
-        return self.current_state.print_board_to_string(clear_the_output=clear_the_output, sleep=sleep)
+    # def print_board(self, stateX, clear_the_output=False):
+    #     if clear_the_output:
+    #         clear_output(wait=True)
+    #     for row_ix in range(stateX.n_legal_rows):
+    #         # Start from top
+    #         row_ix = stateX.n_legal_rows - row_ix - 1
+    #         print("|", end=' ')
+    #         for col_ix in range(stateX.num_columns):
+    #             if stateX.representation[row_ix, col_ix]:
+    #                 print("██", end=' ')
+    #             else:
+    #                 print("  ", end=' ')
+    #         print("|")
+
+    def print_board_to_string(self, stateX, clear_the_output=False, sleep=0):
+        if clear_the_output:
+            clear_output(wait=True)
+        if sleep > 0:
+            time.sleep(sleep)
+        string = "\n"
+        for row_ix in range(stateX.n_legal_rows):
+            # Start from top
+            row_ix = stateX.n_legal_rows - row_ix - 1
+            string += "|"
+            for col_ix in range(stateX.num_columns):
+                if stateX.representation[row_ix, col_ix]:
+                    string += "██"
+                else:
+                    string += "  "
+            string += "|\n"
+        print(string)
+        return string
+
+    # def print_board_to_string(self, clear_the_output=True, sleep=0):
+    #     return self.current_state.print_board_to_string(clear_the_output, sleep)
 
     # def visualize_falling(self, move_index):
 
