@@ -39,7 +39,7 @@ specT = [
 ]
 
 
-# @jitclass(specT)
+@jitclass(specT)
 class Straight:
     def __init__(self, feature_type, num_features, num_columns):
         # Tetromino.__init__(self, feature_type, num_features, num_columns)
@@ -61,13 +61,20 @@ class Straight:
             if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
-                # new_state = state.State(new_representation, new_lowest_free_rows,
-                #                         col_ix,
-                #                         np.arange(anchor_row, anchor_row + 4),  # , dtype=np.int64
-                #                         np.array([1, 1, 1, 1], dtype=np.int64),
-                #                         1.5, self.num_features)  # , 0
-                new_state = state.State(new_representation, new_lowest_free_rows, col_ix, np.arange(anchor_row, anchor_row + 4),
-                                        np.array([1, 1, 1, 1], dtype=np.int64), 1.5, self.num_features, self.feature_type)
+                new_state = state.State(new_representation,
+                                        new_lowest_free_rows,
+                                        np.array([col_ix]),
+                                        np.arange(anchor_row, anchor_row + 4),
+                                        np.array([1, 1, 1, 1], dtype=np.int64),
+                                        1.5,
+                                        self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row)
                 after_states.append(new_state)
 
             # Horizontal placements
@@ -80,19 +87,25 @@ class Straight:
                 if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 4)] = 1
-                    # new_state = state.State(new_representation, new_lowest_free_rows,
-                    #                         col_ix,
-                    #                         np.arange(anchor_row, anchor_row + 1),
-                    #                         np.array([4]),
-                    #                         0, self.num_features,
-                    #                         0)
-                    new_state = state.State(new_representation, new_lowest_free_rows, col_ix, np.arange(anchor_row, anchor_row + 1),
-                                            np.array([4], dtype=np.int64), 0, self.num_features, self.feature_type)
+                    new_state = state.State(new_representation,
+                                            new_lowest_free_rows,
+                                            np.arange(col_ix, col_ix + 4),
+                                            np.arange(anchor_row, anchor_row + 1),
+                                            np.array([4], dtype=np.int64),
+                                            0,
+                                            self.num_features,
+                                            self.feature_type,
+                                            current_state.features,
+                                            current_state.col_transitions_per_col,
+                                            current_state.array_of_rows_with_holes,
+                                            current_state.holes_per_col,
+                                            current_state.hole_depths_per_col,
+                                            current_state.cumulative_wells_per_row)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
+@jitclass(specT)
 class Square(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -116,15 +129,24 @@ class Square(Tetromino):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 2), col_ix:(col_ix + 2)] = 1
                 new_state = state.State(new_representation, new_lowest_free_rows,
-                                        col_ix,
+                                        np.arange(col_ix, col_ix + 2),
                                         np.arange(anchor_row, anchor_row + 2),
                                         np.array([2, 2]),
-                                        0.5, self.num_features, self.feature_type)
+                                        0.5,
+                                        self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row
+                                        )
                 after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
+@jitclass(specT)
 class SnakeR(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -151,10 +173,17 @@ class SnakeR(Tetromino):
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
                 new_state = state.State(new_representation, new_lowest_free_rows,
-                                        col_ix,
+                                        np.arange(col_ix, col_ix + 2),
                                         np.arange(anchor_row, anchor_row + 2),
                                         np.array([1, 2]),
-                                        1, self.num_features, self.feature_type)
+                                        1, self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row)
                 after_states.append(new_state)
 
             # Horizontal placements
@@ -170,15 +199,23 @@ class SnakeR(Tetromino):
                     new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
                     new_representation[anchor_row + 1, (col_ix + 1):(col_ix + 3)] = 1
                     new_state = state.State(new_representation, new_lowest_free_rows,
-                                            col_ix,
+                                            np.arange(col_ix, col_ix + 3),
                                             np.arange(anchor_row, anchor_row + 1),
                                             np.array([2]),
-                                            0.5, self.num_features, self.feature_type)
+                                            0.5,
+                                            self.num_features,
+                                            self.feature_type,
+                                            current_state.features,
+                                            current_state.col_transitions_per_col,
+                                            current_state.array_of_rows_with_holes,
+                                            current_state.holes_per_col,
+                                            current_state.hole_depths_per_col,
+                                            current_state.cumulative_wells_per_row)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
+@jitclass(specT)
 class SnakeL(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -204,10 +241,18 @@ class SnakeL(Tetromino):
                 new_representation[anchor_row:(anchor_row + 2), col_ix] = 1
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix + 1] = 1
                 new_state = state.State(new_representation, new_lowest_free_rows,
-                                        col_ix,
+                                        np.arange(col_ix, col_ix + 2),
                                         np.arange(anchor_row, anchor_row + 2),
                                         np.array([1, 2]),
-                                        1, self.num_features, self.feature_type)
+                                        1,
+                                        self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row)
                 after_states.append(new_state)
 
             ## Horizontal placements
@@ -223,15 +268,23 @@ class SnakeL(Tetromino):
                     new_representation[anchor_row, (col_ix + 1):(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
                     new_state = state.State(new_representation, new_lowest_free_rows,
-                                            col_ix,
+                                            np.arange(col_ix, col_ix + 3),
                                             np.arange(anchor_row, anchor_row + 1),
                                             np.array([2]),
-                                            0.5, self.num_features, self.feature_type)
+                                            0.5,
+                                            self.num_features,
+                                            self.feature_type,
+                                            current_state.features,
+                                            current_state.col_transitions_per_col,
+                                            current_state.array_of_rows_with_holes,
+                                            current_state.holes_per_col,
+                                            current_state.hole_depths_per_col,
+                                            current_state.cumulative_wells_per_row)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
+@jitclass(specT)
 class T(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -262,7 +315,15 @@ class T(Tetromino):
                                         np.arange(col_ix, col_ix + 2),
                                         np.arange(anchor_row, anchor_row + 2),
                                         np.array([1, 2]),
-                                        1, self.num_features, self.feature_type)
+                                        1,
+                                        self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row)
                 after_states.append(new_state)
 
             # Single cell on right
@@ -278,7 +339,15 @@ class T(Tetromino):
                                         np.arange(col_ix, col_ix + 2),
                                         np.arange(anchor_row, anchor_row + 2),
                                         np.array([1, 2]),
-                                        1, self.num_features, self.feature_type)
+                                        1,
+                                        self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row)
                 after_states.append(new_state)
 
             if col_ix < self.num_columns - 2:
@@ -300,7 +369,15 @@ class T(Tetromino):
                                             np.arange(col_ix, col_ix + 3),
                                             np.arange(anchor_row, anchor_row + 1),
                                             np.array([3]),
-                                            0.5, self.num_features, self.feature_type)
+                                            0.5,
+                                            self.num_features,
+                                            self.feature_type,
+                                            current_state.features,
+                                            current_state.col_transitions_per_col,
+                                            current_state.array_of_rows_with_holes,
+                                            current_state.holes_per_col,
+                                            current_state.hole_depths_per_col,
+                                            current_state.cumulative_wells_per_row)
                     after_states.append(new_state)
 
                 # T
@@ -318,12 +395,20 @@ class T(Tetromino):
                                             np.arange(col_ix, col_ix + 3),
                                             np.arange(anchor_row, anchor_row + 2),
                                             np.array([1, 3]),
-                                            0.5, self.num_features, self.feature_type)
+                                            0.5,
+                                            self.num_features,
+                                            self.feature_type,
+                                            current_state.features,
+                                            current_state.col_transitions_per_col,
+                                            current_state.array_of_rows_with_holes,
+                                            current_state.holes_per_col,
+                                            current_state.hole_depths_per_col,
+                                            current_state.cumulative_wells_per_row)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
+@jitclass(specT)
 class RCorner(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -349,10 +434,18 @@ class RCorner(Tetromino):
                 new_representation[anchor_row + 2, col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
                 new_state = state.State(new_representation, new_lowest_free_rows,
-                                        col_ix,
+                                        np.arange(col_ix, col_ix + 2),
                                         np.arange(anchor_row, anchor_row + 3),
                                         np.array([1, 1, 2]),
-                                        1, self.num_features, self.feature_type)
+                                        1,
+                                        self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row)
                 after_states.append(new_state)
 
             # Bottom-left corner
@@ -365,10 +458,18 @@ class RCorner(Tetromino):
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row, col_ix + 1] = 1
                 new_state = state.State(new_representation, new_lowest_free_rows,
-                                        col_ix,
+                                        np.arange(col_ix, col_ix + 2),
                                         np.arange(anchor_row, anchor_row + 1),
                                         np.array([2]),
-                                        1, self.num_features, self.feature_type)
+                                        1,
+                                        self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row)
                 after_states.append(new_state)
 
             if col_ix < self.num_columns - 2:
@@ -385,10 +486,18 @@ class RCorner(Tetromino):
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix + 2] = 1
                     new_state = state.State(new_representation, new_lowest_free_rows,
-                                            col_ix,
+                                            np.arange(col_ix, col_ix + 3),
                                             np.arange(anchor_row, anchor_row + 1),
                                             np.array([3]),
-                                            0.5, self.num_features, self.feature_type)
+                                            0.5,
+                                            self.num_features,
+                                            self.feature_type,
+                                            current_state.features,
+                                            current_state.col_transitions_per_col,
+                                            current_state.array_of_rows_with_holes,
+                                            current_state.holes_per_col,
+                                            current_state.hole_depths_per_col,
+                                            current_state.cumulative_wells_per_row)
                     after_states.append(new_state)
 
                 # Top-left corner
@@ -400,15 +509,23 @@ class RCorner(Tetromino):
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix] = 1
                     new_state = state.State(new_representation, new_lowest_free_rows,
-                                            col_ix,
+                                            np.arange(col_ix, col_ix + 3),
                                             np.arange(anchor_row, anchor_row + 2),
                                             np.array([1, 3]),
-                                            0.5, self.num_features, self.feature_type)
+                                            0.5,
+                                            self.num_features,
+                                            self.feature_type,
+                                            current_state.features,
+                                            current_state.col_transitions_per_col,
+                                            current_state.array_of_rows_with_holes,
+                                            current_state.holes_per_col,
+                                            current_state.hole_depths_per_col,
+                                            current_state.cumulative_wells_per_row)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
+@jitclass(specT)
 class LCorner(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -434,10 +551,18 @@ class LCorner(Tetromino):
                 new_representation[anchor_row + 2, col_ix + 1] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_state = state.State(new_representation, new_lowest_free_rows,
-                                        col_ix,
+                                        np.arange(col_ix, col_ix + 2),
                                         np.arange(anchor_row, anchor_row + 3),
                                         np.array([1, 1, 2]),
-                                        1, self.num_features, self.feature_type)
+                                        1,
+                                        self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row)
                 after_states.append(new_state)
 
             # Bottom-right corner
@@ -450,10 +575,18 @@ class LCorner(Tetromino):
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
                 new_representation[anchor_row, col_ix] = 1
                 new_state = state.State(new_representation, new_lowest_free_rows,
-                                        col_ix,
+                                        np.arange(col_ix, col_ix + 2),
                                         np.arange(anchor_row, anchor_row + 1),
                                         np.array([2]),
-                                        1, self.num_features, self.feature_type)
+                                        1,
+                                        self.num_features,
+                                        self.feature_type,
+                                        current_state.features,
+                                        current_state.col_transitions_per_col,
+                                        current_state.array_of_rows_with_holes,
+                                        current_state.holes_per_col,
+                                        current_state.hole_depths_per_col,
+                                        current_state.cumulative_wells_per_row)
                 after_states.append(new_state)
 
 
@@ -471,10 +604,18 @@ class LCorner(Tetromino):
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix] = 1
                     new_state = state.State(new_representation, new_lowest_free_rows,
-                                            col_ix,
+                                            np.arange(col_ix, col_ix + 3),
                                             np.arange(anchor_row, anchor_row + 1),
                                             np.array([3]),
-                                            0.5, self.num_features, self.feature_type)
+                                            0.5,
+                                            self.num_features,
+                                            self.feature_type,
+                                            current_state.features,
+                                            current_state.col_transitions_per_col,
+                                            current_state.array_of_rows_with_holes,
+                                            current_state.holes_per_col,
+                                            current_state.hole_depths_per_col,
+                                            current_state.cumulative_wells_per_row)
                     after_states.append(new_state)
 
                 # Top-right corner
@@ -486,15 +627,23 @@ class LCorner(Tetromino):
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix + 2] = 1
                     new_state = state.State(new_representation, new_lowest_free_rows,
-                                            col_ix,
+                                            np.arange(col_ix, col_ix + 3),
                                             np.arange(anchor_row, anchor_row + 2),
                                             np.array([1, 3]),
-                                            0.5, self.num_features, self.feature_type)
+                                            0.5,
+                                            self.num_features,
+                                            self.feature_type,
+                                            current_state.features,
+                                            current_state.col_transitions_per_col,
+                                            current_state.array_of_rows_with_holes,
+                                            current_state.holes_per_col,
+                                            current_state.hole_depths_per_col,
+                                            current_state.cumulative_wells_per_row)
                     after_states.append(new_state)
         return after_states
 
 
-# @njit(cache=True)
+@njit(cache=True)
 def numba_any(arr):
     found = False
     i = 0
@@ -507,7 +656,7 @@ def numba_any(arr):
 
 
 
-# # @njit
+# @njit
 # def numba_any_break(arr):
 #     found = False
 #     for i in arr:
@@ -524,7 +673,7 @@ def numba_any(arr):
 # import numpy as np
 # from numba import njit
 #
-# # @njit
+# @njit
 # def numba_any(arr):
 #     found = False
 #     i = 0
@@ -537,7 +686,7 @@ def numba_any(arr):
 #
 #
 #
-# # @njit
+# @njit
 # def numba_any_break(arr):
 #     found = False
 #     for i in arr:

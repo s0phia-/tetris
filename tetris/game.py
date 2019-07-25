@@ -52,12 +52,12 @@ class Tetris:
                                          num_features=self.num_features,
                                          feature_type="bcts")
         self.tetrominos = [
-            # tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
-            # tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
-            # tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
-            # tetromino.Square(self.feature_type, self.num_features, self.num_columns),
-            # tetromino.SnakeR(self.feature_type, self.num_features, self.num_columns),
-            # tetromino.SnakeL(self.feature_type, self.num_features, self.num_columns),
+            tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
+            tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
+            tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
+            tetromino.Square(self.feature_type, self.num_features, self.num_columns),
+            tetromino.SnakeR(self.feature_type, self.num_features, self.num_columns),
+            tetromino.SnakeL(self.feature_type, self.num_features, self.num_columns),
             tetromino.T(self.feature_type, self.num_features, self.num_columns)]
 
         self.tetromino_sampler = tetromino.TetrominoSamplerRandom(self.tetrominos)
@@ -71,6 +71,7 @@ class Tetris:
                                          lowest_free_rows=np.zeros(self.num_columns, dtype=np.int64),
                                          num_features=self.num_features,
                                          feature_type="bcts")
+        self.current_state.calc_feature_values()
         self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
         self.cleared_lines = 0
 
