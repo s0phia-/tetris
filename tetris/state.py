@@ -108,26 +108,24 @@ class State(object):
 
     def get_features(self, direct_by, addRBF=False):  #, order_by=None, standardize_by=None, addRBF=False
         if not self.features_are_calculated:
-            # print("here")
-            self.calc_feature_values()
-            self.features_are_calculated = True
-        # if self.features is None:
-        #     self.calc_feature_values()
+            if self.feature_type == "bcts":
+                # if self.n_cleared_lines > 0:
+                self.calc_bcts_features()
+                self.features_are_calculated = True
+            else:
+                raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
         # TODO: check whether copy is needed here.
         features = self.features.copy()
         features = features * direct_by
         # if order_by is not None:
         #     features = features[order_by]
-        # if direct_by is not None:
-        #     features = features * direct_by
         # if standardize_by is not None:
         #     features = features / standardize_by
         if addRBF:
-            # RBF_features = np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.n_legal_rows / 4)**2 / (2*(self.n_legal_rows / 5)**2))
-            # features = np.append(features, np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.n_legal_rows / 4)**2 / (2*(self.n_legal_rows / 5)**2)))
-            #TODO: check whether concat does same as append here
-            features = np.concatenate((features, np.exp(
-                -(np.mean(self.lowest_free_rows) - np.arange(5) * self.n_legal_rows / 4) ** 2 / (2 * (self.n_legal_rows / 5) ** 2))))
+            features = np.concatenate((
+                features,
+                np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.n_legal_rows / 4) ** 2 / (2 * (self.n_legal_rows / 5) ** 2))
+                ))
         return features
 
     # TODO: Implement order / directions...
@@ -137,61 +135,16 @@ class State(object):
     #     return np.insert(self.features, obj=0, values=1.)
 
     def clear_lines(self, changed_lines):
-        is_full, self.n_cleared_lines, self.representation, self.lowest_free_rows = clear_lines_jitted(changed_lines,
-                                                                                                       self.representation,
-                                                                                                       self.lowest_free_rows,
-                                                                                                       self.num_columns)
+        is_full, self.n_cleared_lines, self.representation, self.lowest_free_rows = \
+            clear_lines_jitted(changed_lines, self.representation,
+                               self.lowest_free_rows, self.num_columns)
         return is_full
-
-    def calc_feature_values(self):
-        if self.feature_type == "bcts":
-            # if self.n_cleared_lines > 0:
-                self.calc_bcts_features_old()
-            # else:
-            #     self.update_bcts_features()
-
-        # elif self.feature_type == 'super_simple':
-        #     self.calc_super_simple_features()
-        # # elif self.feature_type == "adjusted_bcts":
-        # #     self.calc_bcts_features(standardize_by=self.feature_stds)
-        # elif self.feature_type == 'simple':
-        #     self.calc_simple_features()
-        # elif self.feature_type == "standardized_bcts":
-        #     self.calc_standardized_bcts_features()
-        else:
-            raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
 
     # def update_bcts_features(self, old_feature_values, old_rows_with_holes):
     #     pass
 
     def update_bcts_features(self):
         pass
-
-    ###
-    ### OLD and working
-    def calc_bcts_features_old(self):
-        features = np.zeros(self.num_features, dtype=np.float_)
-        eroded_pieces = numba_sum_int(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
-        n_cleared_lines = numba_sum_int(self.cleared_rows_relative_to_anchor)
-        features[3] = self.anchor_row + self.landing_height_bonus
-        features[6] = eroded_pieces * n_cleared_lines
-        tmp_feature_values = get_feature_values_jitted(lowest_free_rows=self.lowest_free_rows,
-                                                       representation=self.representation,
-                                                       num_rows=self.n_legal_rows,
-                                                       num_columns=self.num_columns)
-        # features[[0, 1, 2, 4, 5, 7]]
-        features[0] = tmp_feature_values[0]
-        features[1] = tmp_feature_values[1]
-        features[2] = tmp_feature_values[2]
-        features[4] = tmp_feature_values[3]
-        features[5] = tmp_feature_values[4]
-        features[7] = tmp_feature_values[5]
-
-        # features[[0, 1, 2, 4, 5, 7]] = get_feature_values_jitted(self.lowest_free_rows, self.representation, self.n_legal_rows, self.num_columns)
-        self.features = features
-        # ['rows_with_holes', 'column_transitions', 'holes', 'landing_height', 'cumulative_wells',
-        #                  'row_transitions', 'eroded', 'hole_depth']
-        # self.features = features / np.array([2.18246089, 4.42735771, 3.0698914, 2.31688581, 3.1093846, 4.0334024, 0.46720078, 8.35394364])
 
     def calc_bcts_features(self):
         rows_with_holes_set = {100}

@@ -71,7 +71,7 @@ class Tetris:
                                          lowest_free_rows=np.zeros(self.num_columns, dtype=np.int64),
                                          num_features=self.num_features,
                                          feature_type="bcts")
-        self.current_state.calc_feature_values()
+        self.current_state.calc_bcts_features()
         self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
         self.cleared_lines = 0
 
