@@ -45,7 +45,6 @@ class Tetris:
         # self.target_update = target_update
         self.num_features = num_features
         self.feature_type = feature_type
-        self.num_fields = self.num_columns * self.num_rows
         self.game_over = False
         self.current_state = state.State(representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int64),
                                          lowest_free_rows=np.zeros(self.num_columns, dtype=np.int64),
@@ -91,9 +90,9 @@ class Tetris:
     # def print_board(self, stateX, clear_the_output=False):
     #     if clear_the_output:
     #         clear_output(wait=True)
-    #     for row_ix in range(stateX.n_legal_rows):
+    #     for row_ix in range(stateX.num_legal_rows):
     #         # Start from top
-    #         row_ix = stateX.n_legal_rows - row_ix - 1
+    #         row_ix = stateX.num_legal_rows - row_ix - 1
     #         print("|", end=' ')
     #         for col_ix in range(stateX.num_columns):
     #             if stateX.representation[row_ix, col_ix]:
@@ -108,9 +107,9 @@ class Tetris:
         if sleep > 0:
             time.sleep(sleep)
         string = "\n"
-        for row_ix in range(stateX.n_legal_rows):
+        for row_ix in range(stateX.num_legal_rows):
             # Start from top
-            row_ix = stateX.n_legal_rows - row_ix - 1
+            row_ix = stateX.num_legal_rows - row_ix - 1
             string += "|"
             for col_ix in range(stateX.num_columns):
                 if stateX.representation[row_ix, col_ix]:

@@ -2,7 +2,7 @@ import numpy as np
 import numba
 from numba import njit, jitclass, float64, int64, bool_
 from tetris import state
-
+from numba.typed import List
 
 class Tetromino:
     def __init__(self, feature_type, num_features, num_columns):
@@ -39,7 +39,7 @@ specT = [
 ]
 
 
-@jitclass(specT)
+# @jitclass(specT)
 class Straight:
     def __init__(self, feature_type, num_features, num_columns):
         # Tetromino.__init__(self, feature_type, num_features, num_columns)
@@ -52,13 +52,13 @@ class Straight:
 ██ ██ ██ ██'''
 
     def get_after_states(self, current_state):
-        after_states = []
+        after_states = List()
         # Vertical placements
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows):
             anchor_row = free_pos
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] += 4
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
                 new_state = state.State(new_representation,
@@ -84,7 +84,7 @@ class Straight:
                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 4)])
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix:(col_ix + 4)] = anchor_row + 1
-                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 4)] = 1
                     new_state = state.State(new_representation,
@@ -105,7 +105,7 @@ class Straight:
         return after_states
 
 
-@jitclass(specT)
+# @jitclass(specT)
 class Square(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -118,14 +118,14 @@ class Square(Tetromino):
 ██ ██'''
 
     def get_after_states(self, current_state):
-        after_states = []
+        after_states = List()
         # Horizontal placements
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 2), col_ix:(col_ix + 2)] = 1
                 new_state = state.State(new_representation, new_lowest_free_rows,
@@ -146,7 +146,7 @@ class Square(Tetromino):
         return after_states
 
 
-@jitclass(specT)
+# @jitclass(specT)
 class SnakeR(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -160,7 +160,7 @@ class SnakeR(Tetromino):
 ██ ██'''
 
     def get_after_states(self, current_state):
-        after_states = []
+        after_states = List()
         # Vertical placements
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -168,7 +168,7 @@ class SnakeR(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
@@ -194,7 +194,7 @@ class SnakeR(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix] = anchor_row + 1
                 new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
                     new_representation[anchor_row + 1, (col_ix + 1):(col_ix + 3)] = 1
@@ -215,7 +215,7 @@ class SnakeR(Tetromino):
         return after_states
 
 
-@jitclass(specT)
+# @jitclass(specT)
 class SnakeL(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -228,7 +228,7 @@ class SnakeL(Tetromino):
    ██ ██'''
 
     def get_after_states(self, current_state):
-        after_states = []
+        after_states = List()
         # Vertical placements
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -236,7 +236,7 @@ class SnakeL(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 2
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 2), col_ix] = 1
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix + 1] = 1
@@ -263,7 +263,7 @@ class SnakeL(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
                 new_lowest_free_rows[col_ix + 2] = anchor_row + 1
-                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, (col_ix + 1):(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
@@ -284,7 +284,7 @@ class SnakeL(Tetromino):
         return after_states
 
 
-@jitclass(specT)
+# @jitclass(specT)
 class T(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -297,7 +297,7 @@ class T(Tetromino):
 ██ ██ ██"""
 
     def get_after_states(self, current_state):
-        after_states = []
+        after_states = List()
         # Vertical placements.
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -306,7 +306,7 @@ class T(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 2
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 1, col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
@@ -331,7 +331,7 @@ class T(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row + 1, col_ix + 1] = 1
@@ -361,7 +361,7 @@ class T(Tetromino):
                 new_lowest_free_rows[col_ix] = anchor_row + 1
                 new_lowest_free_rows[col_ix + 2] = anchor_row + 1
                 new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix + 1] = 1
@@ -387,7 +387,7 @@ class T(Tetromino):
                                                    current_state.lowest_free_rows[col_ix + 2]) - 1)
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix + 1] = 1
@@ -408,7 +408,7 @@ class T(Tetromino):
         return after_states
 
 
-@jitclass(specT)
+# @jitclass(specT)
 class RCorner(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -421,7 +421,7 @@ class RCorner(Tetromino):
 ██"""
 
     def get_after_states(self, current_state):
-        after_states = []
+        after_states = List()
         # Vertical placements.
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -429,7 +429,7 @@ class RCorner(Tetromino):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 2, current_state.lowest_free_rows[col_ix + 1])
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 2, col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
@@ -453,7 +453,7 @@ class RCorner(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 1
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row, col_ix + 1] = 1
@@ -481,7 +481,7 @@ class RCorner(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1
                 new_lowest_free_rows[col_ix + 2] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix + 2] = 1
@@ -504,7 +504,7 @@ class RCorner(Tetromino):
                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]) - 1)
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix] = 1
@@ -525,7 +525,7 @@ class RCorner(Tetromino):
         return after_states
 
 
-@jitclass(specT)
+# @jitclass(specT)
 class LCorner(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
@@ -538,7 +538,7 @@ class LCorner(Tetromino):
       ██"""
 
     def get_after_states(self, current_state):
-        after_states = []
+        after_states = List()
         # Vertical placements. 'height' becomes 'width' :)
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -546,7 +546,7 @@ class LCorner(Tetromino):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 2)
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 2, col_ix + 1] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
@@ -570,7 +570,7 @@ class LCorner(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
             new_lowest_free_rows[col_ix] = anchor_row + 1
-            if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
                 new_representation[anchor_row, col_ix] = 1
@@ -599,7 +599,7 @@ class LCorner(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix] = anchor_row + 2
                 new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 1
-                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix] = 1
@@ -622,7 +622,7 @@ class LCorner(Tetromino):
                 anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]) - 1, current_state.lowest_free_rows[col_ix + 2])
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows >= current_state.representation.shape[0] - 4):
+                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix + 2] = 1

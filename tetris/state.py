@@ -20,7 +20,7 @@ spec = [
     ('feature_type', numba.types.string),
     ('num_rows', int64),
     ('num_columns', int64),
-    ('n_legal_rows', int64),
+    ('num_legal_rows', int64),
     ('n_cleared_lines', int64),
     ('changed_cols', int64[:]),
     ('anchor_row', int64),
@@ -46,7 +46,7 @@ spec = [
 # FOR SET: numba.types.containers.Set
 
 
-@jitclass(spec)
+# @jitclass(spec)
 class State(object):
     def __init__(self,
                  representation,
@@ -90,14 +90,14 @@ class State(object):
         self.hole_depths_per_col = np.zeros(self.num_columns, dtype=np.int64)
         self.cumulative_wells_per_row = np.zeros(self.num_columns, dtype=np.int64)
 
-        self.n_legal_rows = self.num_rows - 4
+        self.num_legal_rows = self.num_rows - 4
         self.n_cleared_lines = 0
         self.anchor_row = changed_lines[0]
         self.cleared_rows_relative_to_anchor = self.clear_lines(changed_lines=changed_lines)
 
         self.features_are_calculated = False
         self.features = np.zeros(self.num_features, dtype=np.float64)
-        # self.terminal_state = check_terminal(self.representation, self.n_legal_rows)  # self.is_terminal()
+        # self.terminal_state = check_terminal(self.representation, self.num_legal_rows)  # self.is_terminal()
         # Don't create terminal states in the first place now...
         self.terminal_state = False
         self.reward = 0 if self.terminal_state else self.n_cleared_lines
@@ -109,8 +109,11 @@ class State(object):
     def get_features(self, direct_by, addRBF=False):  #, order_by=None, standardize_by=None, addRBF=False
         if not self.features_are_calculated:
             if self.feature_type == "bcts":
-                # if self.n_cleared_lines > 0:
-                self.calc_bcts_features()
+                if self.n_cleared_lines > 0:
+                    self.calc_bcts_features()
+                else:
+                    # self.update_bcts_features()
+                    self.calc_bcts_features()
                 self.features_are_calculated = True
             else:
                 raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
@@ -124,7 +127,7 @@ class State(object):
         if addRBF:
             features = np.concatenate((
                 features,
-                np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.n_legal_rows / 4) ** 2 / (2 * (self.n_legal_rows / 5) ** 2))
+                np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.num_legal_rows / 4) ** 2 / (2 * (self.num_legal_rows / 5) ** 2))
                 ))
         return features
 
@@ -144,18 +147,15 @@ class State(object):
     #     pass
 
     def update_bcts_features(self):
-        pass
+        min_relevant_col = np.maximum(self.changed_cols[0]-1, 0)
+        max_changed_col = np.minimum(self.changed_cols[-1]+1, self.num_columns-1)
+        relevant_cols = np.arange(min_relevant_col, max_changed_col)
 
     def calc_bcts_features(self):
         rows_with_holes_set = {100}
-        column_transitions = 0
-        holes = 0
-        cumulative_wells = 0
         row_transitions = 0
-        hole_depth = 0
         for col_ix, lowest_free_row in enumerate(self.lowest_free_rows):
             # There is at least one column_transition from the highest full cell (or the bottom which is assumed to be full) to "the top".
-            column_transitions += 1
             self.col_transitions_per_col[col_ix] += 1
             if col_ix == 0:
                 local_well_streak = 0
@@ -169,15 +169,12 @@ class State(object):
                     for row_ix, cell in enumerate(col):
                         if cell == 0:
                             # Holes
-                            holes += 1
                             self.holes_per_col[col_ix] += 1
                             rows_with_holes_set.add(row_ix)
-                            hole_depth += number_of_full_cells_above
                             self.hole_depths_per_col[col_ix] += number_of_full_cells_above
 
                             # Column transitions
                             if cell_below:
-                                column_transitions += 1
                                 self.col_transitions_per_col[col_ix] += 1
 
                             # Row transitions and wells
@@ -185,7 +182,6 @@ class State(object):
                             row_transitions += 1
                             if self.representation[row_ix, col_ix + 1]:  # if cell to the right is full
                                 local_well_streak += 1
-                                cumulative_wells += local_well_streak
                                 self.cumulative_wells_per_row[col_ix] += local_well_streak
                             else:
                                 local_well_streak = 0
@@ -198,7 +194,6 @@ class State(object):
 
                             # Column transitions
                             if not cell_below:
-                                column_transitions += 1
                                 self.col_transitions_per_col[col_ix] += 1
 
                         # Define 'cell_below' for next (higher!) cell.
@@ -211,12 +206,11 @@ class State(object):
                     for row_ix in range(lowest_free_row, max_well_possibility):
                         if self.representation[row_ix, col_ix + 1]:  # if cell to the right is full
                             local_well_streak += 1
-                            cumulative_wells += local_well_streak
                             self.cumulative_wells_per_row[col_ix] += local_well_streak
                         else:
                             local_well_streak = 0
                 # # Add row transitions for each empty cell above lowest_free_row
-                row_transitions += (self.num_rows - lowest_free_row)
+                row_transitions += (self.num_legal_rows - lowest_free_row)
 
             elif col_ix == self.num_columns - 1:
                 local_well_streak = 0
@@ -230,15 +224,12 @@ class State(object):
                     for row_ix, cell in enumerate(col):
                         if cell == 0:
                             # Holes
-                            holes += 1
                             self.holes_per_col[col_ix] += 1
                             rows_with_holes_set.add(row_ix)
-                            hole_depth += number_of_full_cells_above
                             self.hole_depths_per_col[col_ix] += number_of_full_cells_above
 
                             # Column transitions
                             if cell_below:
-                                column_transitions += 1
                                 self.col_transitions_per_col[col_ix] += 1
 
                             # Wells and row transitions
@@ -247,7 +238,6 @@ class State(object):
                             if self.representation[row_ix, col_ix - 1]:  # if cell to the left is full
                                 row_transitions += 1
                                 local_well_streak += 1
-                                cumulative_wells += local_well_streak
                                 self.cumulative_wells_per_row[col_ix] += local_well_streak
                             else:
                                 local_well_streak = 0
@@ -260,7 +250,6 @@ class State(object):
 
                             # Column transitions
                             if not cell_below:
-                                column_transitions += 1
                                 self.col_transitions_per_col[col_ix] += 1
 
                             # Row transitions
@@ -279,12 +268,11 @@ class State(object):
                         if self.representation[row_ix, col_ix - 1]:  # if cell to the left is full
                             row_transitions += 1
                             local_well_streak += 1
-                            cumulative_wells += local_well_streak
                             self.cumulative_wells_per_row[col_ix] += local_well_streak
                         else:
                             local_well_streak = 0
                 # # Add row transitions from last column to border
-                row_transitions += (self.num_rows - lowest_free_row)
+                row_transitions += (self.num_legal_rows - lowest_free_row)
             else:
                 local_well_streak = 0
                 if lowest_free_row > 0:
@@ -297,15 +285,12 @@ class State(object):
                     for row_ix, cell in enumerate(col):
                         if cell == 0:
                             # Holes
-                            holes += 1
                             self.holes_per_col[col_ix] += 1
                             rows_with_holes_set.add(row_ix)
-                            hole_depth += number_of_full_cells_above
                             self.hole_depths_per_col[col_ix] += number_of_full_cells_above
 
                             # Column transitions
                             if cell_below:
-                                column_transitions += 1
                                 self.col_transitions_per_col[col_ix] += 1
 
                             # Wells and row transitions
@@ -315,7 +300,6 @@ class State(object):
                                 row_transitions += 1
                                 if cell_right:
                                     local_well_streak += 1
-                                    cumulative_wells += local_well_streak
                                     self.cumulative_wells_per_row[col_ix] += local_well_streak
                                 else:
                                     local_well_streak = 0
@@ -329,7 +313,6 @@ class State(object):
 
                             # Column transitions
                             if not cell_below:
-                                column_transitions += 1
                                 self.col_transitions_per_col[col_ix] += 1
 
                             # Row transitions
@@ -355,7 +338,6 @@ class State(object):
                             row_transitions += 1
                             if cell_right:
                                 local_well_streak += 1
-                                cumulative_wells += local_well_streak
                                 self.cumulative_wells_per_row[col_ix] += local_well_streak
                             else:
                                 local_well_streak = 0
@@ -375,7 +357,10 @@ class State(object):
         rows_with_holes_set.remove(100)
         self.array_of_rows_with_holes = np.array(list(rows_with_holes_set))
         rows_with_holes = len(rows_with_holes_set)
-
+        column_transitions = np.sum(self.col_transitions_per_col)
+        holes = np.sum(self.holes_per_col)
+        hole_depth = np.sum(self.hole_depths_per_col)
+        cumulative_wells = np.sum(self.cumulative_wells_per_row)
         eroded_pieces = numba_sum_int(self.cleared_rows_relative_to_anchor * self.pieces_per_changed_row)
         n_cleared_lines = numba_sum_int(self.cleared_rows_relative_to_anchor)
         eroded_piece_cells = eroded_pieces * n_cleared_lines
@@ -383,17 +368,17 @@ class State(object):
         self.features = np.array([rows_with_holes, column_transitions, holes, landing_height,
                                   cumulative_wells, row_transitions, eroded_piece_cells,
                                   hole_depth])
-        # TODO: remove after testing
-        assert column_transitions == np.sum(self.col_transitions_per_col)
-        assert holes == np.sum(self.holes_per_col)
-        assert hole_depth == np.sum(self.hole_depths_per_col)
-        assert cumulative_wells == np.sum(self.cumulative_wells_per_row)
+        # # TODO: remove after testing
+        # assert column_transitions == np.sum(self.col_transitions_per_col)
+        # assert holes == np.sum(self.holes_per_col)
+        # assert hole_depth == np.sum(self.hole_depths_per_col)
+        # assert cumulative_wells == np.sum(self.cumulative_wells_per_row)
 
 
 @njit(fastmath=True, cache=True)
-def check_terminal(representation, n_legal_rows):
+def check_terminal(representation, num_legal_rows):
     is_terminal = False
-    for ix in representation[n_legal_rows]:
+    for ix in representation[num_legal_rows]:
         if ix:
             is_terminal = True
             break
@@ -470,753 +455,5 @@ def calc_lowest_free_rows(rep):
         lowest_free_rows[col_ix] = lowest
     return lowest_free_rows
 
-
-# ### With column statistics.
-# @njit(fastmath=True, cache=True)
-# def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_columns):
-#     col_transitions_per_col = np.zeros(num_columns, dtype=np.int64)
-#     holes_per_col = np.zeros(num_columns, dtype=np.int64)
-#     hole_depths_per_col = np.zeros(num_columns, dtype=np.int64)
-#     cumulative_wells_per_row = np.zeros(num_columns, dtype=np.int64)
-#     rows_with_holes_set = {100}
-#     column_transitions = 0
-#     holes = 0
-#     # landing_height
-#     cumulative_wells = 0
-#     row_transitions = 0
-#     # eroded_piece_cells
-#     hole_depth = 0
-#     for col_ix, lowest_free_row in enumerate(lowest_free_rows):
-#         # There is at least one column_transition from the highest full cell (or the bottom which is assumed to be full) to "the top".
-#         column_transitions += 1
-#         col_transitions_per_col[col_ix] += 1
-#         if col_ix == 0:
-#             local_well_streak = 0
-#             if lowest_free_row > 0:
-#                 col = representation[:lowest_free_row, col_ix]
-#                 cell_below = 1
-#
-#                 # Needed for hole_depth
-#                 number_of_full_cells_above = numba_sum_int(col)
-#
-#                 for row_ix, cell in enumerate(col):
-#                     if cell == 0:
-#                         # Holes
-#                         holes += 1
-#                         holes_per_col[col_ix] += 1
-#                         rows_with_holes_set.add(row_ix)
-#                         hole_depth += number_of_full_cells_above
-#                         hole_depths_per_col[col_ix] += 1
-#
-#                         # Column transitions
-#                         if cell_below:
-#                             column_transitions += 1
-#                             col_transitions_per_col[col_ix] += 1
-#
-#                         # Row transitions and wells
-#                         # Because col_ix == 0, all left_cells are 1
-#                         row_transitions += 1
-#                         if representation[row_ix, col_ix + 1]:  # if cell to the right is full
-#                             local_well_streak += 1
-#                             cumulative_wells += local_well_streak
-#                             cumulative_wells_per_row[col_ix] += local_well_streak
-#                         else:
-#                             local_well_streak = 0
-#
-#                     else:  # cell is 1!
-#                         local_well_streak = 0
-#
-#                         # Keep track of full cells above for hole_depth-feature
-#                         number_of_full_cells_above -= 1
-#
-#                         # Column transitions
-#                         if not cell_below:
-#                             column_transitions += 1
-#                             col_transitions_per_col[col_ix] += 1
-#
-#                     # Define 'cell_below' for next (higher!) cell.
-#                     cell_below = cell
-#
-#             # Check wells until lowest_free_row_right
-#             # Check transitions until lowest_free_row_left
-#             max_well_possibility = lowest_free_rows[col_ix + 1]
-#             if max_well_possibility > lowest_free_row:
-#                 for row_ix in range(lowest_free_row, max_well_possibility):
-#                     if representation[row_ix, col_ix + 1]:  # if cell to the right is full
-#                         local_well_streak += 1
-#                         cumulative_wells += local_well_streak
-#                         cumulative_wells_per_row[col_ix] += local_well_streak
-#                     else:
-#                         local_well_streak = 0
-#             # # Add row transitions for each empty cell above lowest_free_row
-#             row_transitions += (num_rows - lowest_free_row)
-#
-#         elif col_ix == num_columns - 1:
-#             local_well_streak = 0
-#             if lowest_free_row > 0:
-#                 col = representation[:lowest_free_row, col_ix]
-#                 cell_below = 1
-#
-#                 # Needed for hole_depth
-#                 number_of_full_cells_above = numba_sum_int(col)
-#
-#                 for row_ix, cell in enumerate(col):
-#                     if cell == 0:
-#                         # Holes
-#                         holes += 1
-#                         holes_per_col[col_ix] += 1
-#                         rows_with_holes_set.add(row_ix)
-#                         hole_depth += number_of_full_cells_above
-#                         hole_depths_per_col[col_ix] += 1
-#
-#                         # Column transitions
-#                         if cell_below:
-#                             column_transitions += 1
-#                             col_transitions_per_col[col_ix] += 1
-#
-#                         # Wells and row transitions
-#                         # Because this is the last column (the right border is "full") and cell == 0:
-#                         row_transitions += 1
-#                         if representation[row_ix, col_ix - 1]:  # if cell to the left is full
-#                             row_transitions += 1
-#                             local_well_streak += 1
-#                             cumulative_wells += local_well_streak
-#                             cumulative_wells_per_row[col_ix] += local_well_streak
-#                         else:
-#                             local_well_streak = 0
-#
-#                     else:  # cell is 1!
-#                         local_well_streak = 0
-#
-#                         # Keep track of full cells above for hole_depth-feature
-#                         number_of_full_cells_above -= 1
-#
-#                         # Column transitions
-#                         if not cell_below:
-#                             column_transitions += 1
-#                             col_transitions_per_col[col_ix] += 1
-#
-#                         # Row transitions
-#                         cell_left = representation[row_ix, col_ix - 1]
-#                         if not cell_left:
-#                             row_transitions += 1
-#
-#                     # Define 'cell_below' for next (higher!) cell.
-#                     cell_below = cell
-#
-#             # Check wells until minimum(lowest_free_row_left, lowest_free_row_right)
-#             # Check transitions until lowest_free_row_left
-#             max_well_possibility = lowest_free_rows[col_ix - 1]
-#             if max_well_possibility > lowest_free_row:
-#                 for row_ix in range(lowest_free_row, max_well_possibility):
-#                     if representation[row_ix, col_ix - 1]:  # if cell to the left is full
-#                         row_transitions += 1
-#                         local_well_streak += 1
-#                         cumulative_wells += local_well_streak
-#                         cumulative_wells_per_row[col_ix] += local_well_streak
-#                     else:
-#                         local_well_streak = 0
-#             # # Add row transitions from last column to border
-#             row_transitions += (num_rows - lowest_free_row)
-#         else:
-#             local_well_streak = 0
-#             if lowest_free_row > 0:
-#                 col = representation[:lowest_free_row, col_ix]
-#                 cell_below = 1
-#
-#                 # Needed for hole_depth
-#                 number_of_full_cells_above = numba_sum_int(col)
-#
-#                 for row_ix, cell in enumerate(col):
-#                     if cell == 0:
-#                         # Holes
-#                         holes += 1
-#                         holes_per_col[col_ix] += 1
-#                         rows_with_holes_set.add(row_ix)
-#                         hole_depth += number_of_full_cells_above
-#                         hole_depths_per_col[col_ix] += 1
-#
-#                         # Column transitions
-#                         if cell_below:
-#                             column_transitions += 1
-#                             col_transitions_per_col[col_ix] += 1
-#
-#                         # Wells and row transitions
-#                         cell_left = representation[row_ix, col_ix - 1]
-#                         cell_right = representation[row_ix, col_ix + 1]
-#                         if cell_left:
-#                             row_transitions += 1
-#                             if cell_right:
-#                                 local_well_streak += 1
-#                                 cumulative_wells += local_well_streak
-#                                 cumulative_wells_per_row[col_ix] += local_well_streak
-#                             else:
-#                                 local_well_streak = 0
-#                         else:
-#                             local_well_streak = 0
-#
-#                     else:  # cell is 1!
-#                         local_well_streak = 0
-#                         # Keep track of full cells above for hole_depth-feature
-#                         number_of_full_cells_above -= 1
-#
-#                         # Column transitions
-#                         if not cell_below:
-#                             column_transitions += 1
-#                             col_transitions_per_col[col_ix] += 1
-#
-#                         # Row transitions
-#                         cell_left = representation[row_ix, col_ix - 1]
-#                         if not cell_left:
-#                             row_transitions += 1
-#
-#                     # Define 'cell_below' for next (higher!) cell.
-#                     cell_below = cell
-#             # Check wells until minimum(lowest_free_row_left, lowest_free_row_right)
-#             # Check transitions until lowest_free_row_left
-#             lowest_free_row_left = lowest_free_rows[col_ix - 1]
-#             lowest_free_row_right = lowest_free_rows[col_ix + 1]
-#             max_well_possibility = np.minimum(lowest_free_row_left, lowest_free_row_right)
-#
-#             # Weird case distinction because max_well_possibility always "includes" lowest_free_row_left
-#             #  but lowest_free_row_left can be higher than max_well_possibility. Don't want to double count.
-#             if max_well_possibility > lowest_free_row:
-#                 for row_ix in range(lowest_free_row, max_well_possibility):
-#                     cell_left = representation[row_ix, col_ix - 1]
-#                     cell_right = representation[row_ix, col_ix + 1]
-#                     if cell_left:
-#                         row_transitions += 1
-#                         if cell_right:
-#                             local_well_streak += 1
-#                             cumulative_wells += local_well_streak
-#                             cumulative_wells_per_row[col_ix] += local_well_streak
-#                         else:
-#                             local_well_streak = 0
-#                     else:
-#                         local_well_streak = 0
-#                 if lowest_free_row_left > max_well_possibility:
-#                     for row_ix in range(max_well_possibility, lowest_free_row_left):
-#                         cell_left = representation[row_ix, col_ix - 1]
-#                         if cell_left:
-#                             row_transitions += 1
-#             elif lowest_free_row_left > lowest_free_row:
-#                 for row_ix in range(lowest_free_row, lowest_free_row_left):
-#                     cell_left = representation[row_ix, col_ix - 1]
-#                     if cell_left:
-#                         row_transitions += 1
-#
-#     rows_with_holes_set.remove(100)
-#     rows_with_holes = len(rows_with_holes_set)
-#     # if paper_order:
-#     out = [rows_with_holes, column_transitions, holes, cumulative_wells, row_transitions, hole_depth]
-#     # else:  # ordered by standardized bcts-weights ['eroded', 'rows_with_holes', 'landing_height', 'column_transitions', 'holes', 'cumulative_wells', 'row_transitions', 'hole_depth']
-#     #     out = [rows_with_holes, column_transitions, holes, cumulative_wells, row_transitions, hole_depth]
-#     return out
-
-
-
-###
-### OLDEST before fixing col transitions, etc.
-@njit(fastmath=True)
-def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_columns):
-    rows_with_holes_set = {100}
-    column_transitions = 0
-    holes = 0
-    # landing_height
-    cumulative_wells = 0
-    row_transitions = 0
-    # eroded_piece_cells
-    hole_depth = 0
-    for col_ix, lowest_free_row in enumerate(lowest_free_rows):
-        if col_ix == 0:
-            local_well_streak = 0
-            if lowest_free_row > 0:
-                col = representation[:lowest_free_row, col_ix]
-                cell_below = 1
-
-                # Needed for hole_depth
-                number_of_full_cells_above = numba_sum_int(col)
-
-                # There is at least one column_transition from the highest full cell to "the top".
-                column_transitions += 1
-                for row_ix, cell in enumerate(col):
-                    if cell == 0:
-                        # Holes
-                        holes += 1
-                        rows_with_holes_set.add(row_ix)
-                        hole_depth += number_of_full_cells_above
-
-                        # Column transitions
-                        if cell_below:
-                            column_transitions += 1
-
-                        # Row transitions and wells
-                        # Because col_ix == 0, all left_cells are 1
-                        row_transitions += 1
-                        if representation[row_ix, col_ix + 1]:  # if cell to the right is full
-                            local_well_streak += 1
-                            cumulative_wells += local_well_streak
-                        else:
-                            local_well_streak = 0
-
-                    else:  # cell is 1!
-                        local_well_streak = 0
-
-                        # Keep track of full cells above for hole_depth-feature
-                        number_of_full_cells_above -= 1
-
-                        # Column transitions
-                        if not cell_below:
-                            column_transitions += 1
-
-                    # Define 'cell_below' for next (higher!) cell.
-                    cell_below = cell
-
-            # Check wells until lowest_free_row_right
-            # Check transitions until lowest_free_row_left
-            max_well_possibility = lowest_free_rows[col_ix + 1]
-            if max_well_possibility > lowest_free_row:
-                for row_ix in range(lowest_free_row, max_well_possibility):
-                    if representation[row_ix, col_ix + 1]:  # if cell to the right is full
-                        local_well_streak += 1
-                        cumulative_wells += local_well_streak
-                    else:
-                        local_well_streak = 0
-            # # Add row transitions for each empty cell above lowest_free_row
-            row_transitions += (num_rows - lowest_free_row)
-
-        elif col_ix == num_columns - 1:
-            local_well_streak = 0
-            if lowest_free_row > 0:
-                col = representation[:lowest_free_row, col_ix]
-                cell_below = 1
-
-                # Needed for hole_depth
-                number_of_full_cells_above = numba_sum_int(col)
-
-                # There is at least one column_transition from the highest full cell to "the top".
-                column_transitions += 1
-                for row_ix, cell in enumerate(col):
-                    if cell == 0:
-                        # Holes
-                        holes += 1
-                        rows_with_holes_set.add(row_ix)
-                        hole_depth += number_of_full_cells_above
-
-                        # Column transitions
-                        if cell_below:
-                            column_transitions += 1
-
-                        # Wells and row transitions
-                        # Because this is the last column (the right border is "full") and cell == 0:
-                        row_transitions += 1
-                        if representation[row_ix, col_ix - 1]:  # if cell to the left is full
-                            row_transitions += 1
-                            local_well_streak += 1
-                            cumulative_wells += local_well_streak
-                        else:
-                            local_well_streak = 0
-
-                    else:  # cell is 1!
-                        local_well_streak = 0
-
-                        # Keep track of full cells above for hole_depth-feature
-                        number_of_full_cells_above -= 1
-
-                        # Column transitions
-                        if not cell_below:
-                            column_transitions += 1
-
-                        # Row transitions
-                        cell_left = representation[row_ix, col_ix - 1]
-                        if not cell_left:
-                            row_transitions += 1
-
-                    # Define 'cell_below' for next (higher!) cell.
-                    cell_below = cell
-
-            # Check wells until minimum(lowest_free_row_left, lowest_free_row_right)
-            # Check transitions until lowest_free_row_left
-            max_well_possibility = lowest_free_rows[col_ix - 1]
-            if max_well_possibility > lowest_free_row:
-                for row_ix in range(lowest_free_row, max_well_possibility):
-                    if representation[row_ix, col_ix - 1]:  # if cell to the left is full
-                        row_transitions += 1
-                        local_well_streak += 1
-                        cumulative_wells += local_well_streak
-                    else:
-                        local_well_streak = 0
-            # # Add row transitions from last column to border
-            row_transitions += (num_rows - lowest_free_row)
-        else:
-            local_well_streak = 0
-            if lowest_free_row > 0:
-                col = representation[:lowest_free_row, col_ix]
-                cell_below = 1
-
-                # Needed for hole_depth
-                number_of_full_cells_above = numba_sum_int(col)
-
-                # There is at least one column_transition from the highest full cell to "the top".
-                column_transitions += 1
-                for row_ix, cell in enumerate(col):
-                    if cell == 0:
-                        # Holes
-                        holes += 1
-                        rows_with_holes_set.add(row_ix)
-                        hole_depth += number_of_full_cells_above
-
-                        # Column transitions
-                        if cell_below:
-                            column_transitions += 1
-
-                        # Wells and row transitions
-                        cell_left = representation[row_ix, col_ix - 1]
-                        cell_right = representation[row_ix, col_ix + 1]
-                        if cell_left:
-                            row_transitions += 1
-                            if cell_right:
-                                local_well_streak += 1
-                                cumulative_wells += local_well_streak
-                            else:
-                                local_well_streak = 0
-                        else:
-                            local_well_streak = 0
-
-                    else:  # cell is 1!
-                        local_well_streak = 0
-                        # Keep track of full cells above for hole_depth-feature
-                        number_of_full_cells_above -= 1
-
-                        # Column transitions
-                        if not cell_below:
-                            column_transitions += 1
-
-                        # Row transitions
-                        cell_left = representation[row_ix, col_ix - 1]
-                        if not cell_left:
-                            row_transitions += 1
-
-                    # Define 'cell_below' for next (higher!) cell.
-                    cell_below = cell
-            # Check wells until minimum(lowest_free_row_left, lowest_free_row_right)
-            # Check transitions until lowest_free_row_left
-            lowest_free_row_left = lowest_free_rows[col_ix - 1]
-            lowest_free_row_right = lowest_free_rows[col_ix + 1]
-            max_well_possibility = np.minimum(lowest_free_row_left, lowest_free_row_right)
-            if max_well_possibility > lowest_free_row:
-                for row_ix in range(lowest_free_row, max_well_possibility):
-                    cell_left = representation[row_ix, col_ix - 1]
-                    cell_right = representation[row_ix, col_ix + 1]
-                    if cell_left:
-                        row_transitions += 1
-                        if cell_right:
-                            local_well_streak += 1
-                            cumulative_wells += local_well_streak
-                        else:
-                            local_well_streak = 0
-                    else:
-                        local_well_streak = 0
-            if lowest_free_row_left > max_well_possibility > lowest_free_row:
-                for row_ix in range(max_well_possibility, lowest_free_row_left):
-                    cell_left = representation[row_ix, col_ix - 1]
-                    if cell_left:
-                        row_transitions += 1
-
-    rows_with_holes_set.remove(100)
-    rows_with_holes = len(rows_with_holes_set)
-    # if paper_order:
-    out = [rows_with_holes, column_transitions, holes, cumulative_wells, row_transitions, hole_depth]
-    # else:  # ordered by standardized bcts-weights ['eroded', 'rows_with_holes', 'landing_height', 'column_transitions', 'holes', 'cumulative_wells', 'row_transitions', 'hole_depth']
-    #     out = [rows_with_holes, column_transitions, holes, cumulative_wells, row_transitions, hole_depth]
-    return out
-
-
-
-###
-### WORKING version of get_feature_values_jitted without "per_column statistics"
-###
-# @njit(fastmath=True, cache=True)
-# def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_columns):
-#     rows_with_holes_set = {100}
-#     column_transitions = 0
-#     holes = 0
-#     # landing_height
-#     cumulative_wells = 0
-#     row_transitions = 0
-#     # eroded_piece_cells
-#     hole_depth = 0
-#     for col_ix, lowest_free_row in enumerate(lowest_free_rows):
-#         # There is at least one column_transition from the highest full cell (or the bottom which is assumed to be full) to "the top".
-#         column_transitions += 1
-#         if col_ix == 0:
-#             local_well_streak = 0
-#             if lowest_free_row > 0:
-#                 col = representation[:lowest_free_row, col_ix]
-#                 cell_below = 1
-#
-#                 # Needed for hole_depth
-#                 number_of_full_cells_above = numba_sum_int(col)
-#
-#                 for row_ix, cell in enumerate(col):
-#                     if cell == 0:
-#                         # Holes
-#                         holes += 1
-#                         rows_with_holes_set.add(row_ix)
-#                         hole_depth += number_of_full_cells_above
-#
-#                         # Column transitions
-#                         if cell_below:
-#                             column_transitions += 1
-#
-#                         # Row transitions and wells
-#                         # Because col_ix == 0, all left_cells are 1
-#                         row_transitions += 1
-#                         if representation[row_ix, col_ix + 1]:  # if cell to the right is full
-#                             local_well_streak += 1
-#                             cumulative_wells += local_well_streak
-#                         else:
-#                             local_well_streak = 0
-#
-#                     else:  # cell is 1!
-#                         local_well_streak = 0
-#
-#                         # Keep track of full cells above for hole_depth-feature
-#                         number_of_full_cells_above -= 1
-#
-#                         # Column transitions
-#                         if not cell_below:
-#                             column_transitions += 1
-#
-#                     # Define 'cell_below' for next (higher!) cell.
-#                     cell_below = cell
-#
-#             # Check wells until lowest_free_row_right
-#             # Check transitions until lowest_free_row_left
-#             max_well_possibility = lowest_free_rows[col_ix + 1]
-#             if max_well_possibility > lowest_free_row:
-#                 for row_ix in range(lowest_free_row, max_well_possibility):
-#                     if representation[row_ix, col_ix + 1]:  # if cell to the right is full
-#                         local_well_streak += 1
-#                         cumulative_wells += local_well_streak
-#                     else:
-#                         local_well_streak = 0
-#             # # Add row transitions for each empty cell above lowest_free_row
-#             row_transitions += (num_rows - lowest_free_row)
-#
-#         elif col_ix == num_columns - 1:
-#             local_well_streak = 0
-#             if lowest_free_row > 0:
-#                 col = representation[:lowest_free_row, col_ix]
-#                 cell_below = 1
-#
-#                 # Needed for hole_depth
-#                 number_of_full_cells_above = numba_sum_int(col)
-#
-#                 for row_ix, cell in enumerate(col):
-#                     if cell == 0:
-#                         # Holes
-#                         holes += 1
-#                         rows_with_holes_set.add(row_ix)
-#                         hole_depth += number_of_full_cells_above
-#
-#                         # Column transitions
-#                         if cell_below:
-#                             column_transitions += 1
-#
-#                         # Wells and row transitions
-#                         # Because this is the last column (the right border is "full") and cell == 0:
-#                         row_transitions += 1
-#                         if representation[row_ix, col_ix - 1]:  # if cell to the left is full
-#                             row_transitions += 1
-#                             local_well_streak += 1
-#                             cumulative_wells += local_well_streak
-#                         else:
-#                             local_well_streak = 0
-#
-#                     else:  # cell is 1!
-#                         local_well_streak = 0
-#
-#                         # Keep track of full cells above for hole_depth-feature
-#                         number_of_full_cells_above -= 1
-#
-#                         # Column transitions
-#                         if not cell_below:
-#                             column_transitions += 1
-#
-#                         # Row transitions
-#                         cell_left = representation[row_ix, col_ix - 1]
-#                         if not cell_left:
-#                             row_transitions += 1
-#
-#                     # Define 'cell_below' for next (higher!) cell.
-#                     cell_below = cell
-#
-#             # Check wells until minimum(lowest_free_row_left, lowest_free_row_right)
-#             # Check transitions until lowest_free_row_left
-#             max_well_possibility = lowest_free_rows[col_ix - 1]
-#             if max_well_possibility > lowest_free_row:
-#                 for row_ix in range(lowest_free_row, max_well_possibility):
-#                     if representation[row_ix, col_ix - 1]:  # if cell to the left is full
-#                         row_transitions += 1
-#                         local_well_streak += 1
-#                         cumulative_wells += local_well_streak
-#                     else:
-#                         local_well_streak = 0
-#             # # Add row transitions from last column to border
-#             row_transitions += (num_rows - lowest_free_row)
-#         else:
-#             local_well_streak = 0
-#             if lowest_free_row > 0:
-#                 col = representation[:lowest_free_row, col_ix]
-#                 cell_below = 1
-#
-#                 # Needed for hole_depth
-#                 number_of_full_cells_above = numba_sum_int(col)
-#
-#                 for row_ix, cell in enumerate(col):
-#                     if cell == 0:
-#                         # Holes
-#                         holes += 1
-#                         rows_with_holes_set.add(row_ix)
-#                         hole_depth += number_of_full_cells_above
-#
-#                         # Column transitions
-#                         if cell_below:
-#                             column_transitions += 1
-#
-#                         # Wells and row transitions
-#                         cell_left = representation[row_ix, col_ix - 1]
-#                         cell_right = representation[row_ix, col_ix + 1]
-#                         if cell_left:
-#                             row_transitions += 1
-#                             if cell_right:
-#                                 local_well_streak += 1
-#                                 cumulative_wells += local_well_streak
-#                             else:
-#                                 local_well_streak = 0
-#                         else:
-#                             local_well_streak = 0
-#
-#                     else:  # cell is 1!
-#                         local_well_streak = 0
-#                         # Keep track of full cells above for hole_depth-feature
-#                         number_of_full_cells_above -= 1
-#
-#                         # Column transitions
-#                         if not cell_below:
-#                             column_transitions += 1
-#
-#                         # Row transitions
-#                         cell_left = representation[row_ix, col_ix - 1]
-#                         if not cell_left:
-#                             row_transitions += 1
-#
-#                     # Define 'cell_below' for next (higher!) cell.
-#                     cell_below = cell
-#             # Check wells until minimum(lowest_free_row_left, lowest_free_row_right)
-#             # Check transitions until lowest_free_row_left
-#             lowest_free_row_left = lowest_free_rows[col_ix - 1]
-#             lowest_free_row_right = lowest_free_rows[col_ix + 1]
-#             max_well_possibility = np.minimum(lowest_free_row_left, lowest_free_row_right)
-#
-#             # Weird case distinction because max_well_possibility always "includes" lowest_free_row_left
-#             #  but lowest_free_row_left can be higher than max_well_possibility. Don't want to double count.
-#             if max_well_possibility > lowest_free_row:
-#                 for row_ix in range(lowest_free_row, max_well_possibility):
-#                     cell_left = representation[row_ix, col_ix - 1]
-#                     cell_right = representation[row_ix, col_ix + 1]
-#                     if cell_left:
-#                         row_transitions += 1
-#                         if cell_right:
-#                             local_well_streak += 1
-#                             cumulative_wells += local_well_streak
-#                         else:
-#                             local_well_streak = 0
-#                     else:
-#                         local_well_streak = 0
-#                 if lowest_free_row_left > max_well_possibility:
-#                     for row_ix in range(max_well_possibility, lowest_free_row_left):
-#                         cell_left = representation[row_ix, col_ix - 1]
-#                         if cell_left:
-#                             row_transitions += 1
-#             elif lowest_free_row_left > lowest_free_row:
-#                 for row_ix in range(lowest_free_row, lowest_free_row_left):
-#                     cell_left = representation[row_ix, col_ix - 1]
-#                     if cell_left:
-#                         row_transitions += 1
-#
-#     rows_with_holes_set.remove(100)
-#     rows_with_holes = len(rows_with_holes_set)
-#     # if paper_order:
-#     out = [rows_with_holes, column_transitions, holes, cumulative_wells, row_transitions, hole_depth]
-#     # else:  # ordered by standardized bcts-weights ['eroded', 'rows_with_holes', 'landing_height', 'column_transitions', 'holes', 'cumulative_wells', 'row_transitions', 'hole_depth']
-#     #     out = [rows_with_holes, column_transitions, holes, cumulative_wells, row_transitions, hole_depth]
-#     return out
-
-
-
-# @njit
-# def get_super_simple_jitted(lowest_free_rows, representation, num_columns):  # anchor_row, landing_height_bonus, num_rows,
-#     holes = 0.0
-#     cumulative_wells = 0.0
-#     # min_lowest_free_row, max_lowest_free_row, avg_free_row = minmaxavg_jitted(lowest_free_rows)
-#     # landing_height = anchor_row + landing_height_bonus - min_lowest_free_row
-#     diffs = lowest_free_rows[1:] - lowest_free_rows[:-1]
-#     n_landing_positions = len(set(diffs[(-2 < diffs) & (diffs < 2)]))
-#     for col_ix, lowest_free_row in enumerate(lowest_free_rows):
-#         col = representation[:lowest_free_row, col_ix]
-#         local_well_streak = 0
-#         for row_ix, cell in enumerate(col):
-#             if cell == 0:
-#                 # Holes
-#                 holes += 1 * (0.8 + row_ix / 8)
-#                 # holes += 1
-#
-#                 # Count capped wells as well!
-#                 if col_ix == 0:
-#                     cell_left = 1
-#                     cell_right = representation[row_ix, col_ix + 1]
-#                 elif col_ix == num_columns - 1:
-#                     cell_left = representation[row_ix, col_ix - 1]
-#                     cell_right = 1
-#                 else:
-#                     cell_left = representation[row_ix, col_ix - 1]
-#                     cell_right = representation[row_ix, col_ix + 1]
-#
-#                 if cell_left and cell_right:
-#                     local_well_streak += 1
-#                     cumulative_wells += local_well_streak
-#                 else:
-#                     local_well_streak = 0
-#
-#         if col_ix == 0:
-#             max_well_possibility = lowest_free_rows[col_ix + 1]
-#         elif col_ix == num_columns - 1:
-#             max_well_possibility = lowest_free_rows[col_ix - 1]
-#         else:
-#             lowest_free_row_left = lowest_free_rows[col_ix - 1]
-#             lowest_free_row_right = lowest_free_rows[col_ix + 1]
-#             max_well_possibility = np.minimum(lowest_free_row_left, lowest_free_row_right)
-#         local_well_streak = 0
-#         if max_well_possibility > lowest_free_row:
-#             for row_ix in range(lowest_free_row, max_well_possibility):
-#                 if col_ix == 0:
-#                     cell_left = 1
-#                     cell_right = representation[row_ix, col_ix + 1]
-#                 elif col_ix == num_columns - 1:
-#                     cell_left = representation[row_ix, col_ix - 1]
-#                     cell_right = 1
-#                 else:
-#                     cell_left = representation[row_ix, col_ix - 1]
-#                     cell_right = representation[row_ix, col_ix + 1]
-#
-#                 if cell_left and cell_right:
-#                     local_well_streak += 1
-#                     cumulative_wells += local_well_streak
-#                 else:
-#                     local_well_streak = 0
-#     features = [holes, cumulative_wells/5, n_landing_positions]
-#     return features
 
 
