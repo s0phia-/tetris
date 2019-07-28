@@ -11,7 +11,42 @@ lowest_free_rows = np.zeros(10, dtype=np.int8)
 num_columns = np.int8(10)
 
 """
+update bool with 1s
+
+WEIRD: 1s seem to be slightly faster than Trues...
+
+"""
+
+@njit
+def update_with_bool():
+    arr = np.zeros(100000000, dtype=np.bool_)
+    for ix in range(len(arr)):
+        arr[ix] = True
+    return arr
+
+@njit
+def update_with_one():
+    arr = np.zeros(100000000, dtype=np.bool_)
+    for ix in range(len(arr)):
+        arr[ix] = 1
+    return arr
+
+s = time.time()
+update_with_bool()
+e = time.time()
+print(e-s)
+
+s = time.time()
+update_with_one()
+e = time.time()
+print(e-s)
+
+
+"""
 enumerate vs range
+
+
+result: sorta equal...
 """
 
 arr = np.random.random(100000000)

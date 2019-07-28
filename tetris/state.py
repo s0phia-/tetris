@@ -30,9 +30,9 @@ spec = [
     ('cleared_rows_relative_to_anchor', bool_[:]),
     ('features_are_calculated', bool_),
     ('features', float64[:]),
-    ('terminal_state', bool_),
-    ('reward', int8),
-    ('value_estimate', float64),
+    ('terminal_state', bool_)#,
+    # ('reward', int8),
+    # ('value_estimate', float64),
     # ('col_transitions_per_col', int8[:]),
     # ('row_transitions_per_col', int8[:]),
     # ('holes_per_col', int8[:]),
@@ -62,34 +62,21 @@ class State(object):
                  # cumulative_wells_per_col #=np.array([0], dtype=np.int8)):  # , features=np.zeros(1, dtype=np.float64)
                  ):
         self.representation = representation
-        # if lowest_free_rows is None:
-        #     raise ValueError("Should not calc_lowest_free_rows.")
-        #     self.lowest_free_rows = calc_lowest_free_rows(self.representation)
-        # else:
         self.lowest_free_rows = lowest_free_rows
         self.num_rows, self.num_columns = representation.shape
-
-        # self.changed_cols = changed_cols
-
         self.pieces_per_changed_row = pieces_per_changed_row
         self.landing_height_bonus = landing_height_bonus
         self.num_features = num_features
         self.feature_type = feature_type  # "bcts"
         self.n_cleared_lines = 0
         self.anchor_row = changed_lines[0]
-        # if np.max(self.lowest_free_rows) > 8:
-        #     print(self)
-        #     print(self.lowest_free_rows)
-        #     print("stay here")
-
         self.cleared_rows_relative_to_anchor = self.clear_lines(changed_lines)
-        # TODO: REMOVE FOR SPEED
-        assert np.all(calc_lowest_free_rows(self.representation) == self.lowest_free_rows)
-
+        # # TODO: REMOVE FOR SPEED
+        # assert np.all(calc_lowest_free_rows(self.representation) == self.lowest_free_rows)
         self.features_are_calculated = False
         self.features = np.zeros(self.num_features, dtype=np.float64)
-        # self.terminal_state = check_terminal(self.representation, self.num_rows)  # self.is_terminal()
         # Don't create terminal states in the first place now...
+        # self.terminal_state = check_terminal(self.representation, self.num_rows)  # self.is_terminal()
         self.terminal_state = False
         # self.reward = 0 if self.terminal_state else self.n_cleared_lines
         # self.value_estimate = 0.0
@@ -985,18 +972,18 @@ def numba_sum(arr):
 #
 
 
-@njit(fastmath=True, cache=True)
-def calc_lowest_free_rows(rep):
-    num_rows, n_cols = rep.shape
-    lowest_free_rows = np.zeros(n_cols, dtype=np.int8)
-    for col_ix in range(n_cols):
-        lowest = 0
-        for row_ix in range(num_rows - 1, -1, -1):
-            if rep[row_ix, col_ix] == 1:
-                lowest = row_ix + 1
-                break
-        lowest_free_rows[col_ix] = lowest
-    return lowest_free_rows
-
-
+# @njit(fastmath=True, cache=True)
+# def calc_lowest_free_rows(rep):
+#     num_rows, n_cols = rep.shape
+#     lowest_free_rows = np.zeros(n_cols, dtype=np.int8)
+#     for col_ix in range(n_cols):
+#         lowest = 0
+#         for row_ix in range(num_rows - 1, -1, -1):
+#             if rep[row_ix, col_ix] == 1:
+#                 lowest = row_ix + 1
+#                 break
+#         lowest_free_rows[col_ix] = lowest
+#     return lowest_free_rows
+#
+#
 

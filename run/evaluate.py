@@ -37,8 +37,8 @@ start = time.time()
 #     random_rewards[i] = evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0)
 
 print("EW")
-rewards = np.zeros(100)
-for i in range(100):
+rewards = np.zeros(50)
+for i in range(50):
     env = tetris.Tetris(num_columns=10, num_rows=10, verbose=True)
     agent = ConstantAgent(policy_weights=np.ones(8, dtype=np.float64))
     rewards[i] = evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0)

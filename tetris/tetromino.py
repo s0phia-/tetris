@@ -82,8 +82,7 @@ class Straight:
                                             0,
                                             self.num_features,
                                             self.feature_type)
-
-                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
                                             # current_state.array_of_rows_with_holes,
                                             # current_state.holes_per_col,
