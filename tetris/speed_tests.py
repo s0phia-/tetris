@@ -158,7 +158,7 @@ def get_lowest_free_row_1d(arr):
 @jit(nopython=True)
 def calc_lowest_free_rows2(rep):
     n_cols = rep.shape[1]
-    lowest_free_rows = np.zeros(n_cols, dtype=np.int64)
+    lowest_free_rows = np.zeros(n_cols, dtype=np.int8)
     for col in range(n_cols):
         lowest_free_rows[col] = get_lowest_free_row_1d(rep[:, col])
     return lowest_free_rows
@@ -167,7 +167,7 @@ def calc_lowest_free_rows2(rep):
 @jit(nopython=True)
 def calc_lowest_free_rows3(rep):
     num_rows, n_cols = rep.shape
-    lowest_free_rows = np.zeros(n_cols, dtype=np.int64)
+    lowest_free_rows = np.zeros(n_cols, dtype=np.int8)
     for col_ix in range(n_cols):
         lowest = 0
         for row_ix in range(num_rows):
@@ -190,7 +190,7 @@ setup = """
 import numpy as np;
 a = np.array([0, 1, 1, 0, 0, 0, 1, 1])
 b = np.array([False, True, True, False, False, False, True, True])
-c = np.array([0, 1, 1, 0, 0, 0, 1, 1], dtype=np.int64)
+c = np.array([0, 1, 1, 0, 0, 0, 1, 1], dtype=np.int8)
 d = np.array([False, True, True, False, False, False, True, True], dtype=np.bool_)
 e = np.array([0, 1, 1, 0, 0, 0, 1, 1], dtype=np.int8)
 """

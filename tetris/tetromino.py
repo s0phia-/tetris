@@ -1,27 +1,18 @@
 import numpy as np
 import numba
-from numba import njit, jitclass, float64, int64, bool_
+from numba import njit, jitclass, float64, int8, bool_
 from tetris import state
 from numba.typed import List
 
-class Tetromino:
-    def __init__(self, feature_type, num_features, num_columns):
-        self.feature_type = feature_type
-        self.num_features = num_features
-        self.num_columns = num_columns
+
+# TODO: introduce typed list
 
 
-class TetrominoSampler:
-    def __init__(self, tetrominos):
-        self.tetrominos = tetrominos
-        self.current_batch = np.random.permutation(len(self.tetrominos))
-
-    def next_tetromino(self):
-        if len(self.current_batch) == 0:
-            self.current_batch = np.random.permutation(len(self.tetrominos))
-        tetromino = self.tetrominos[self.current_batch[0]]
-        self.current_batch = np.delete(self.current_batch, 0)
-        return tetromino
+specT = [
+    ('feature_type', numba.types.string),
+    ('num_features', int8),
+    ('num_columns', int8)
+]
 
 
 class TetrominoSamplerRandom:
@@ -29,17 +20,11 @@ class TetrominoSamplerRandom:
         self.tetrominos = tetrominos
 
     def next_tetromino(self):
-        return np.random.choice(a=self.tetrominos, size=1)
+        return np.random.choice(a=self.tetrominos, size=1)[0]
 
 
-specT = [
-    ('feature_type', numba.types.string),
-    ('num_features', int64),
-    ('num_columns', int64)
-]
 
-
-# @jitclass(specT)
+@jitclass(specT)
 class Straight:
     def __init__(self, feature_type, num_features, num_columns):
         # Tetromino.__init__(self, feature_type, num_features, num_columns)
@@ -47,34 +32,36 @@ class Straight:
         self.num_features = num_features
         self.num_columns = num_columns
 
-    def __repr__(self):
-        return '''
-██ ██ ██ ██'''
+#     def __repr__(self):
+#         return '''
+# ██ ██ ██ ██'''
 
     def get_after_states(self, current_state):
-        after_states = List()
+        # after_states = List()
+        after_states = []
         # Vertical placements
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows):
             anchor_row = free_pos
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] += 4
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        np.array([col_ix]),
-                                        np.arange(anchor_row, anchor_row + 4),
-                                        np.array([1, 1, 1, 1], dtype=np.int64),
+                                        # np.array([col_ix], dtype=np.int8),
+                                        np.arange(anchor_row, anchor_row + 4, 1, np.int8),
+                                        np.array([1, 1, 1, 1], dtype=np.int8),
                                         1.5,
                                         self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row)
+                                        self.feature_type)
+
+                                        # current_state.col_transitions_per_col,
+                                        # current_state.row_transitions_per_col,
+                                        # current_state.array_of_rows_with_holes,
+                                        # current_state.holes_per_col,
+                                        # current_state.hole_depths_per_col,
+                                        # current_state.cumulative_wells_per_col)
                 after_states.append(new_state)
 
             # Horizontal placements
@@ -84,83 +71,87 @@ class Straight:
                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 4)])
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix:(col_ix + 4)] = anchor_row + 1
-                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+                if not numba_any(new_lowest_free_rows > current_state.num_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 4)] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            np.arange(col_ix, col_ix + 4),
-                                            np.arange(anchor_row, anchor_row + 1),
-                                            np.array([4], dtype=np.int64),
+                                            # np.arange(col_ix, col_ix + 4, 1, np.int8),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
+                                            np.array([4], dtype=np.int8),
                                             0,
                                             self.num_features,
-                                            self.feature_type,
-                                            current_state.features,
-                                            current_state.col_transitions_per_col,
-                                            current_state.array_of_rows_with_holes,
-                                            current_state.holes_per_col,
-                                            current_state.hole_depths_per_col,
-                                            current_state.cumulative_wells_per_row)
+                                            self.feature_type)
+
+                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
-class Square(Tetromino):
+@jitclass(specT)
+class Square:
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
         self.num_features = num_features
         self.num_columns = num_columns
 
-    def __repr__(self):
-        return '''
-██ ██ 
-██ ██'''
+#     def __repr__(self):
+#         return '''
+# ██ ██
+# ██ ██'''
 
     def get_after_states(self, current_state):
-        after_states = List()
+        # after_states = List()
+        after_states = []
         # Horizontal placements
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 2), col_ix:(col_ix + 2)] = 1
-                new_state = state.State(new_representation, new_lowest_free_rows,
-                                        np.arange(col_ix, col_ix + 2),
-                                        np.arange(anchor_row, anchor_row + 2),
-                                        np.array([2, 2]),
+                new_state = state.State(new_representation,
+                                        new_lowest_free_rows,
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
+                                        np.array([2, 2], dtype=np.int8),
                                         0.5,
                                         self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row
-                                        )
+                                        self.feature_type)
+                                        # current_state.col_transitions_per_col,
+                                        # current_state.row_transitions_per_col,
+                                        # current_state.array_of_rows_with_holes,
+                                        # current_state.holes_per_col,
+                                        # current_state.hole_depths_per_col,
+                                        # current_state.cumulative_wells_per_col
+                                        # )
                 after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
-class SnakeR(Tetromino):
+@jitclass(specT)
+class SnakeR:
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
         self.num_features = num_features
         self.num_columns = num_columns
 
 
-    def __repr__(self):
-        return '''
-   ██ ██ 
-██ ██'''
+#     def __repr__(self):
+#         return '''
+#    ██ ██
+# ██ ██'''
 
     def get_after_states(self, current_state):
-        after_states = List()
+        # after_states = List()
+        after_states = []
         # Vertical placements
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -168,22 +159,24 @@ class SnakeR(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
-                new_state = state.State(new_representation, new_lowest_free_rows,
-                                        np.arange(col_ix, col_ix + 2),
-                                        np.arange(anchor_row, anchor_row + 2),
-                                        np.array([1, 2]),
-                                        1, self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row)
+                new_state = state.State(new_representation,
+                                        new_lowest_free_rows,
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
+                                        np.array([1, 2], dtype=np.int8),
+                                        1,                                             self.num_features,
+                                            self.feature_type)
+
+                                                                                    # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                 after_states.append(new_state)
 
             # Horizontal placements
@@ -194,41 +187,44 @@ class SnakeR(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix] = anchor_row + 1
                 new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+                if not numba_any(new_lowest_free_rows > current_state.num_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
                     new_representation[anchor_row + 1, (col_ix + 1):(col_ix + 3)] = 1
-                    new_state = state.State(new_representation, new_lowest_free_rows,
-                                            np.arange(col_ix, col_ix + 3),
-                                            np.arange(anchor_row, anchor_row + 1),
-                                            np.array([2]),
+                    new_state = state.State(new_representation,
+                                            new_lowest_free_rows,
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
+                                            np.array([2], dtype=np.int8),
                                             0.5,
-                                            self.num_features,
-                                            self.feature_type,
-                                            current_state.features,
-                                            current_state.col_transitions_per_col,
-                                            current_state.array_of_rows_with_holes,
-                                            current_state.holes_per_col,
-                                            current_state.hole_depths_per_col,
-                                            current_state.cumulative_wells_per_row)
+                                                                                        self.num_features,
+                                            self.feature_type)
+
+                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
-class SnakeL(Tetromino):
+@jitclass(specT)
+class SnakeL:
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
         self.num_features = num_features
         self.num_columns = num_columns
 
-    def __repr__(self):
-        return '''
-██ ██ 
-   ██ ██'''
+#     def __repr__(self):
+#         return '''
+# ██ ██
+#    ██ ██'''
 
     def get_after_states(self, current_state):
-        after_states = List()
+        # after_states = List()
+        after_states = []
         # Vertical placements
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -236,23 +232,25 @@ class SnakeL(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 2
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 2), col_ix] = 1
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix + 1] = 1
-                new_state = state.State(new_representation, new_lowest_free_rows,
-                                        np.arange(col_ix, col_ix + 2),
-                                        np.arange(anchor_row, anchor_row + 2),
-                                        np.array([1, 2]),
+                new_state = state.State(new_representation,
+                                        new_lowest_free_rows,
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
+                                        np.array([1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row)
+                                        self.feature_type)
+
+                                                                                    # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                 after_states.append(new_state)
 
             ## Horizontal placements
@@ -263,41 +261,44 @@ class SnakeL(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
                 new_lowest_free_rows[col_ix + 2] = anchor_row + 1
-                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+                if not numba_any(new_lowest_free_rows > current_state.num_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, (col_ix + 1):(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
-                    new_state = state.State(new_representation, new_lowest_free_rows,
-                                            np.arange(col_ix, col_ix + 3),
-                                            np.arange(anchor_row, anchor_row + 1),
-                                            np.array([2]),
+                    new_state = state.State(new_representation,
+                                            new_lowest_free_rows,
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
+                                            np.array([2], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type,
-                                            current_state.features,
-                                            current_state.col_transitions_per_col,
-                                            current_state.array_of_rows_with_holes,
-                                            current_state.holes_per_col,
-                                            current_state.hole_depths_per_col,
-                                            current_state.cumulative_wells_per_row)
+                                            self.feature_type)
+
+                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
-class T(Tetromino):
+@jitclass(specT)
+class T:
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
         self.num_features = num_features
         self.num_columns = num_columns
 
-    def __repr__(self):
-        return """
-   ██
-██ ██ ██"""
+#     def __repr__(self):
+#         return """
+#    ██
+# ██ ██ ██"""
 
     def get_after_states(self, current_state):
-        after_states = List()
+        # after_states = List()
+        after_states = []
         # Vertical placements.
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -306,24 +307,25 @@ class T(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 2
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 1, col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        np.arange(col_ix, col_ix + 2),
-                                        np.arange(anchor_row, anchor_row + 2),
-                                        np.array([1, 2]),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
+                                        np.array([1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row)
+                                        self.feature_type)
+
+                                                                                    # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                 after_states.append(new_state)
 
             # Single cell on right
@@ -331,23 +333,25 @@ class T(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row + 1, col_ix + 1] = 1
-                new_state = state.State(new_representation, new_lowest_free_rows,
-                                        np.arange(col_ix, col_ix + 2),
-                                        np.arange(anchor_row, anchor_row + 2),
-                                        np.array([1, 2]),
+                new_state = state.State(new_representation,
+                                        new_lowest_free_rows,
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
+                                        np.array([1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row)
+                                        self.feature_type)
+
+                                                                                    # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                 after_states.append(new_state)
 
             if col_ix < self.num_columns - 2:
@@ -361,23 +365,25 @@ class T(Tetromino):
                 new_lowest_free_rows[col_ix] = anchor_row + 1
                 new_lowest_free_rows[col_ix + 2] = anchor_row + 1
                 new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+                if not numba_any(new_lowest_free_rows > current_state.num_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix + 1] = 1
-                    new_state = state.State(new_representation, new_lowest_free_rows,
-                                            np.arange(col_ix, col_ix + 3),
-                                            np.arange(anchor_row, anchor_row + 1),
-                                            np.array([3]),
+                    new_state = state.State(new_representation,
+                                            new_lowest_free_rows,
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
+                                            np.array([3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type,
-                                            current_state.features,
-                                            current_state.col_transitions_per_col,
-                                            current_state.array_of_rows_with_holes,
-                                            current_state.holes_per_col,
-                                            current_state.hole_depths_per_col,
-                                            current_state.cumulative_wells_per_row)
+                                            self.feature_type)
+
+                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
 
                 # T
@@ -387,41 +393,44 @@ class T(Tetromino):
                                                    current_state.lowest_free_rows[col_ix + 2]) - 1)
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+                if not numba_any(new_lowest_free_rows > current_state.num_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix + 1] = 1
-                    new_state = state.State(new_representation, new_lowest_free_rows,
-                                            np.arange(col_ix, col_ix + 3),
-                                            np.arange(anchor_row, anchor_row + 2),
-                                            np.array([1, 3]),
+                    new_state = state.State(new_representation,
+                                            new_lowest_free_rows,
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
+                                            np.arange(anchor_row, anchor_row + 2, 1, np.int8),
+                                            np.array([1, 3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type,
-                                            current_state.features,
-                                            current_state.col_transitions_per_col,
-                                            current_state.array_of_rows_with_holes,
-                                            current_state.holes_per_col,
-                                            current_state.hole_depths_per_col,
-                                            current_state.cumulative_wells_per_row)
+                                            self.feature_type)
+
+                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
-class RCorner(Tetromino):
+@jitclass(specT)
+class RCorner:
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
         self.num_features = num_features
         self.num_columns = num_columns
 
-    def __repr__(self):
-        return """
-██ ██ ██
-██"""
+#     def __repr__(self):
+#         return """
+# ██ ██ ██
+# ██"""
 
     def get_after_states(self, current_state):
-        after_states = List()
+        # after_states = List()
+        after_states = []
         # Vertical placements.
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -429,23 +438,25 @@ class RCorner(Tetromino):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 2, current_state.lowest_free_rows[col_ix + 1])
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 2, col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
-                new_state = state.State(new_representation, new_lowest_free_rows,
-                                        np.arange(col_ix, col_ix + 2),
-                                        np.arange(anchor_row, anchor_row + 3),
-                                        np.array([1, 1, 2]),
+                new_state = state.State(new_representation,
+                                        new_lowest_free_rows,
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
+                                        np.arange(anchor_row, anchor_row + 3, 1, np.int8),
+                                        np.array([1, 1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row)
+                                        self.feature_type)
+
+                                                                                    # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                 after_states.append(new_state)
 
             # Bottom-left corner
@@ -453,23 +464,25 @@ class RCorner(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix] = anchor_row + 3
             new_lowest_free_rows[col_ix + 1] = anchor_row + 1
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row, col_ix + 1] = 1
-                new_state = state.State(new_representation, new_lowest_free_rows,
-                                        np.arange(col_ix, col_ix + 2),
-                                        np.arange(anchor_row, anchor_row + 1),
-                                        np.array([2]),
+                new_state = state.State(new_representation,
+                                        new_lowest_free_rows,
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
+                                        np.arange(anchor_row, anchor_row + 1, 1, np.int8),
+                                        np.array([2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row)
+                                        self.feature_type)
+
+                                                                                    # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                 after_states.append(new_state)
 
             if col_ix < self.num_columns - 2:
@@ -481,64 +494,69 @@ class RCorner(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1
                 new_lowest_free_rows[col_ix + 2] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+                if not numba_any(new_lowest_free_rows > current_state.num_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix + 2] = 1
-                    new_state = state.State(new_representation, new_lowest_free_rows,
-                                            np.arange(col_ix, col_ix + 3),
-                                            np.arange(anchor_row, anchor_row + 1),
-                                            np.array([3]),
+                    new_state = state.State(new_representation,
+                                            new_lowest_free_rows,
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
+                                            np.array([3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type,
-                                            current_state.features,
-                                            current_state.col_transitions_per_col,
-                                            current_state.array_of_rows_with_holes,
-                                            current_state.holes_per_col,
-                                            current_state.hole_depths_per_col,
-                                            current_state.cumulative_wells_per_row)
+                                            self.feature_type)
+
+                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
 
                 # Top-left corner
                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]) - 1)
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+                if not numba_any(new_lowest_free_rows > current_state.num_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix] = 1
-                    new_state = state.State(new_representation, new_lowest_free_rows,
-                                            np.arange(col_ix, col_ix + 3),
-                                            np.arange(anchor_row, anchor_row + 2),
-                                            np.array([1, 3]),
+                    new_state = state.State(new_representation,
+                                            new_lowest_free_rows,
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
+                                            np.arange(anchor_row, anchor_row + 2, 1, np.int8),
+                                            np.array([1, 3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type,
-                                            current_state.features,
-                                            current_state.col_transitions_per_col,
-                                            current_state.array_of_rows_with_holes,
-                                            current_state.holes_per_col,
-                                            current_state.hole_depths_per_col,
-                                            current_state.cumulative_wells_per_row)
+                                            self.feature_type)
+
+                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
         return after_states
 
 
-# @jitclass(specT)
-class LCorner(Tetromino):
+@jitclass(specT)
+class LCorner:
     def __init__(self, feature_type, num_features, num_columns):
         self.feature_type = feature_type
         self.num_features = num_features
         self.num_columns = num_columns
 
-    def __repr__(self):
-        return """
-██ ██ ██
-      ██"""
+#     def __repr__(self):
+#         return """
+# ██ ██ ██
+#       ██"""
 
     def get_after_states(self, current_state):
-        after_states = List()
+        # after_states = List()
+        after_states = []
         # Vertical placements. 'height' becomes 'width' :)
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
@@ -546,23 +564,25 @@ class LCorner(Tetromino):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 2)
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 2, col_ix + 1] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
-                new_state = state.State(new_representation, new_lowest_free_rows,
-                                        np.arange(col_ix, col_ix + 2),
-                                        np.arange(anchor_row, anchor_row + 3),
-                                        np.array([1, 1, 2]),
+                new_state = state.State(new_representation,
+                                        new_lowest_free_rows,
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
+                                        np.arange(anchor_row, anchor_row + 3, 1, np.int8),
+                                        np.array([1, 1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row)
+                                        self.feature_type)
+
+                                                                                    # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                 after_states.append(new_state)
 
             # Bottom-right corner
@@ -570,23 +590,25 @@ class LCorner(Tetromino):
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
             new_lowest_free_rows[col_ix + 1] = anchor_row + 3
             new_lowest_free_rows[col_ix] = anchor_row + 1
-            if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+            if not numba_any(new_lowest_free_rows > current_state.num_rows):
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
                 new_representation[anchor_row, col_ix] = 1
-                new_state = state.State(new_representation, new_lowest_free_rows,
-                                        np.arange(col_ix, col_ix + 2),
-                                        np.arange(anchor_row, anchor_row + 1),
-                                        np.array([2]),
+                new_state = state.State(new_representation,
+                                        new_lowest_free_rows,
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
+                                        np.arange(anchor_row, anchor_row + 1, 1, np.int8),
+                                        np.array([2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type,
-                                        current_state.features,
-                                        current_state.col_transitions_per_col,
-                                        current_state.array_of_rows_with_holes,
-                                        current_state.holes_per_col,
-                                        current_state.hole_depths_per_col,
-                                        current_state.cumulative_wells_per_row)
+                                        self.feature_type)
+
+                                                                                    # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                 after_states.append(new_state)
 
 
@@ -599,46 +621,49 @@ class LCorner(Tetromino):
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix] = anchor_row + 2
                 new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 1
-                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+                if not numba_any(new_lowest_free_rows > current_state.num_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix] = 1
-                    new_state = state.State(new_representation, new_lowest_free_rows,
-                                            np.arange(col_ix, col_ix + 3),
-                                            np.arange(anchor_row, anchor_row + 1),
-                                            np.array([3]),
+                    new_state = state.State(new_representation,
+                                            new_lowest_free_rows,
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
+                                            np.array([3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type,
-                                            current_state.features,
-                                            current_state.col_transitions_per_col,
-                                            current_state.array_of_rows_with_holes,
-                                            current_state.holes_per_col,
-                                            current_state.hole_depths_per_col,
-                                            current_state.cumulative_wells_per_row)
+                                            self.feature_type)
+                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
 
                 # Top-right corner
                 anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]) - 1, current_state.lowest_free_rows[col_ix + 2])
                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
                 new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_legal_rows):
+                if not numba_any(new_lowest_free_rows > current_state.num_rows):
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix + 2] = 1
-                    new_state = state.State(new_representation, new_lowest_free_rows,
-                                            np.arange(col_ix, col_ix + 3),
-                                            np.arange(anchor_row, anchor_row + 2),
-                                            np.array([1, 3]),
+                    new_state = state.State(new_representation,
+                                            new_lowest_free_rows,
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
+                                            np.arange(anchor_row, anchor_row + 2, 1, np.int8),
+                                            np.array([1, 3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type,
-                                            current_state.features,
-                                            current_state.col_transitions_per_col,
-                                            current_state.array_of_rows_with_holes,
-                                            current_state.holes_per_col,
-                                            current_state.hole_depths_per_col,
-                                            current_state.cumulative_wells_per_row)
+                                            self.feature_type)
+
+                                                                                        # current_state.col_transitions_per_col,
+                                            # current_state.row_transitions_per_col,
+                                            # current_state.array_of_rows_with_holes,
+                                            # current_state.holes_per_col,
+                                            # current_state.hole_depths_per_col,
+                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
         return after_states
 
@@ -656,6 +681,28 @@ def numba_any(arr):
 
 
 
+# class Tetromino:
+#     def __init__(self, feature_type, num_features, num_columns):
+#         self.feature_type = feature_type
+#         self.num_features = num_features
+#         self.num_columns = num_columns
+
+
+
+
+# class TetrominoSampler:
+#     def __init__(self, tetrominos):
+#         self.tetrominos = tetrominos
+#         self.current_batch = np.random.permutation(len(self.tetrominos))
+#
+#     def next_tetromino(self):
+#         if len(self.current_batch) == 0:
+#             self.current_batch = np.random.permutation(len(self.tetrominos))
+#         tetromino = self.tetrominos[self.current_batch[0]]
+#         self.current_batch = np.delete(self.current_batch, 0)
+#         return tetromino
+
+
 # @njit
 # def numba_any_break(arr):
 #     found = False
@@ -666,41 +713,4 @@ def numba_any(arr):
 #     return found
 
 
-# arr = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False])
-# numba_any(arr)
-#
-# setup = '''
-# import numpy as np
-# from numba import njit
-#
-# @njit
-# def numba_any(arr):
-#     found = False
-#     i = 0
-#     arr_len = len(arr)
-#     while not found and i < arr_len:
-#         if arr[i]:
-#             found = True
-#         i += 1
-#     return found
-#
-#
-#
-# @njit
-# def numba_any_break(arr):
-#     found = False
-#     for i in arr:
-#         if i:
-#             found = True
-#             break
-#     return found
-#
-# arr = np.array([False, False, False, False, True, False, False, False, False, False, False, False, False])
-# numba_any_break(arr)
-# numba_any(arr)
-#
-# '''
-# import timeit
-#
-# timeit.timeit('numba_any(arr)', setup=setup, number=10000000)
-# timeit.timeit('numba_any_break(arr)', setup=setup, number=10000000)
+

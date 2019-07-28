@@ -10,7 +10,7 @@ np.random.seed(1)
 
 import numba.config as c
 print("NUMBA_DISABLE_JIT:", c.DISABLE_JIT)
-# c.DISABLE_JIT = 1
+c.DISABLE_JIT = 0
 # print("NUMBA_DISABLE_JIT:", c.DISABLE_JIT)
 
 
@@ -28,9 +28,6 @@ def evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0):
     return env.cleared_lines
 
 start = time.time()
-# rewards = np.zeros(2)
-# for i in range(2):
-
 
 # print("RANDOM")
 # random_rewards = np.zeros(10)
@@ -39,12 +36,11 @@ start = time.time()
 #     agent = ConstantAgent(policy_weights=np.random.normal(0, 1, 8))
 #     random_rewards[i] = evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0)
 
-
 print("EW")
-rewards = np.zeros(10)
-for i in range(10):
+rewards = np.zeros(100)
+for i in range(100):
     env = tetris.Tetris(num_columns=10, num_rows=10, verbose=True)
-    agent = ConstantAgent(policy_weights=np.ones(8))
+    agent = ConstantAgent(policy_weights=np.ones(8, dtype=np.float64))
     rewards[i] = evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0)
 
 end = time.time()
@@ -55,13 +51,5 @@ with open("t" + time_id + ".txt", "w") as text_file:
     print("Time spent: " + str((end - start)) + "seconds.", file=text_file)
     # print("Random Rewards are: " + str(random_rewards), file=text_file)
     print("Rewards are: " + str(rewards), file=text_file)
+    print("Rewards mean is: " + str(np.mean(rewards)), file=text_file)
 
-
-# import tetris
-# from agents.m_learning import MLearning
-# from agents.random_agent import RandomAgent
-# from run.evaluate import evaluate
-# env = tetris.Tetris(num_columns=10, num_rows=10, verbose=True)
-# agent = RandomAgent()
-#
-# evaluate(env, agent, visualize=True, clear_the_output=True)
