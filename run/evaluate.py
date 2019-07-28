@@ -18,13 +18,16 @@ def evaluate(env, agent, visualize=False, clear_the_output=False, sleep=0):
     env.reset()
     # _ = env.print_board_to_string(env.current_state, clear_the_output, sleep)
     while not env.game_over and env.cleared_lines <= env.max_cleared_test_lines:
-        current_tetromino = env.tetromino_sampler.next_tetromino()
+        # current_tetromino = env.tetromino_sampler.next_tetromino()
+        # env.current_tetromino
         # print(current_tetromino)
-        chosen_action, move_index = agent.choose_action_test(start_state=env.current_state, start_tetromino=current_tetromino)
+        # env.tetromino_handler.next_tetromino()
+        # print(env.tetromino_handler.current_tetromino)
+        chosen_action = agent.choose_action_test(start_state=env.current_state, start_tetromino=env.tetromino_handler)
         env.make_step(chosen_action)
-        # assert not np.any(env.current_state.representation[] > env.num_rows)
         if visualize and not env.current_state.terminal_state:
             env.print_board_to_string(env.current_state, clear_the_output, sleep)
+    # print(env.cleared_lines)
     return env.cleared_lines
 
 start = time.time()

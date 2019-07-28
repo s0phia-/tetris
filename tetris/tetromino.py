@@ -42,9 +42,9 @@ class Straight:
         # Vertical placements
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows):
             anchor_row = free_pos
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix] += 4
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 4 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix] += 4
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
                 new_state = state.State(new_representation,
@@ -54,7 +54,8 @@ class Straight:
                                         np.array([1, 1, 1, 1], dtype=np.int8),
                                         1.5,
                                         self.num_features,
-                                        self.feature_type)
+                                        self.feature_type,
+                                        False)
 
                                         # current_state.col_transitions_per_col,
                                         # current_state.row_transitions_per_col,
@@ -69,9 +70,9 @@ class Straight:
             # max_col_index = self.num_columns - 3
             # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 4)])
-                new_lowest_free_rows = current_state.lowest_free_rows.copy()
-                new_lowest_free_rows[col_ix:(col_ix + 4)] = anchor_row + 1
-                if not numba_any(new_lowest_free_rows > current_state.num_rows):
+                if not anchor_row + 1 > current_state.num_rows:
+                    new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                    new_lowest_free_rows[col_ix:(col_ix + 4)] = anchor_row + 1
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 4)] = 1
                     new_state = state.State(new_representation,
@@ -81,7 +82,8 @@ class Straight:
                                             np.array([4], dtype=np.int8),
                                             0,
                                             self.num_features,
-                                            self.feature_type)
+                                            self.feature_type,
+                                            False)
                                             # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
                                             # current_state.array_of_rows_with_holes,
@@ -111,9 +113,9 @@ class Square:
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 2 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 2), col_ix:(col_ix + 2)] = 1
                 new_state = state.State(new_representation,
@@ -123,7 +125,8 @@ class Square:
                                         np.array([2, 2], dtype=np.int8),
                                         0.5,
                                         self.num_features,
-                                        self.feature_type)
+                                        self.feature_type,
+                                        False)
                                         # current_state.col_transitions_per_col,
                                         # current_state.row_transitions_per_col,
                                         # current_state.array_of_rows_with_holes,
@@ -155,10 +158,10 @@ class SnakeR:
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1, current_state.lowest_free_rows[col_ix + 1])
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix] = anchor_row + 3
-            new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 3 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix] = anchor_row + 3
+                new_lowest_free_rows[col_ix + 1] = anchor_row + 2
                 new_representation = current_state.representation.copy()
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
@@ -167,8 +170,10 @@ class SnakeR:
                                         # np.arange(col_ix, col_ix + 2, 1, np.int8),
                                         np.arange(anchor_row, anchor_row + 2, 1, np.int8),
                                         np.array([1, 2], dtype=np.int8),
-                                        1,                                             self.num_features,
-                                            self.feature_type)
+                                        1,
+                                        self.num_features,
+                                        self.feature_type,
+                                        False)
 
                                                                                     # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -183,10 +188,10 @@ class SnakeR:
             # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             if col_ix < self.num_columns - 2:
                 anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]), current_state.lowest_free_rows[col_ix + 2] - 1)
-                new_lowest_free_rows = current_state.lowest_free_rows.copy()
-                new_lowest_free_rows[col_ix] = anchor_row + 1
-                new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_rows):
+                if not anchor_row + 2 > current_state.num_rows:
+                    new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                    new_lowest_free_rows[col_ix] = anchor_row + 1
+                    new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 2
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
                     new_representation[anchor_row + 1, (col_ix + 1):(col_ix + 3)] = 1
@@ -196,8 +201,9 @@ class SnakeR:
                                             np.arange(anchor_row, anchor_row + 1, 1, np.int8),
                                             np.array([2], dtype=np.int8),
                                             0.5,
-                                                                                        self.num_features,
-                                            self.feature_type)
+                                            self.num_features,
+                                            self.feature_type,
+                                            False)
 
                                                                                         # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -228,10 +234,10 @@ class SnakeL:
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 1)
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix] = anchor_row + 2
-            new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 3 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix] = anchor_row + 2
+                new_lowest_free_rows[col_ix + 1] = anchor_row + 3
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 2), col_ix] = 1
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix + 1] = 1
@@ -242,7 +248,8 @@ class SnakeL:
                                         np.array([1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type)
+                                        self.feature_type,
+                                        False)
 
                                                                                     # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -257,10 +264,10 @@ class SnakeL:
             # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             if col_ix < self.num_columns - 2:
                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1, np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]))
-                new_lowest_free_rows = current_state.lowest_free_rows.copy()
-                new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
-                new_lowest_free_rows[col_ix + 2] = anchor_row + 1
-                if not numba_any(new_lowest_free_rows > current_state.num_rows):
+                if not anchor_row + 2 > current_state.num_rows:
+                    new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                    new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
+                    new_lowest_free_rows[col_ix + 2] = anchor_row + 1
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, (col_ix + 1):(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
@@ -271,7 +278,8 @@ class SnakeL:
                                             np.array([2], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type)
+                                            self.feature_type,
+                                            False)
 
                                                                                         # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -303,10 +311,10 @@ class T:
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             # Single cell on left
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1, current_state.lowest_free_rows[col_ix + 1])
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix] = anchor_row + 2
-            new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 3 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix] = anchor_row + 2
+                new_lowest_free_rows[col_ix + 1] = anchor_row + 3
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 1, col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
@@ -317,7 +325,8 @@ class T:
                                         np.array([1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type)
+                                        self.feature_type,
+                                        False)
 
                                                                                     # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -329,10 +338,10 @@ class T:
 
             # Single cell on right
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 1)
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix] = anchor_row + 3
-            new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 3 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix] = anchor_row + 3
+                new_lowest_free_rows[col_ix + 1] = anchor_row + 2
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row + 1, col_ix + 1] = 1
@@ -343,7 +352,8 @@ class T:
                                         np.array([1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type)
+                                        self.feature_type,
+                                        False)
 
                                                                                     # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -359,12 +369,12 @@ class T:
         # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             # upside-down T
                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
-                new_lowest_free_rows = current_state.lowest_free_rows.copy()
-                # new_lowest_free_rows[[col_ix, col_ix + 2]] = anchor_row + 1
-                new_lowest_free_rows[col_ix] = anchor_row + 1
-                new_lowest_free_rows[col_ix + 2] = anchor_row + 1
-                new_lowest_free_rows[col_ix + 1] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_rows):
+                if not anchor_row + 2 > current_state.num_rows:
+                    new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                    # new_lowest_free_rows[[col_ix, col_ix + 2]] = anchor_row + 1
+                    new_lowest_free_rows[col_ix] = anchor_row + 1
+                    new_lowest_free_rows[col_ix + 2] = anchor_row + 1
+                    new_lowest_free_rows[col_ix + 1] = anchor_row + 2
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix + 1] = 1
@@ -375,7 +385,8 @@ class T:
                                             np.array([3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type)
+                                            self.feature_type,
+                                            False)
 
                                                                                         # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -390,9 +401,9 @@ class T:
                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix + 1],
                                         np.maximum(current_state.lowest_free_rows[col_ix],
                                                    current_state.lowest_free_rows[col_ix + 2]) - 1)
-                new_lowest_free_rows = current_state.lowest_free_rows.copy()
-                new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_rows):
+                if not anchor_row + 2 > current_state.num_rows:
+                    new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                    new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix + 1] = 1
@@ -403,7 +414,8 @@ class T:
                                             np.array([1, 3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type)
+                                            self.feature_type,
+                                            False)
 
                                                                                         # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -435,9 +447,9 @@ class RCorner:
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             # Top-right corner
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 2, current_state.lowest_free_rows[col_ix + 1])
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 3 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 2, col_ix] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
@@ -448,7 +460,8 @@ class RCorner:
                                         np.array([1, 1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type)
+                                        self.feature_type,
+                                        False)
 
                                                                                     # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -460,10 +473,10 @@ class RCorner:
 
             # Bottom-left corner
             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix] = anchor_row + 3
-            new_lowest_free_rows[col_ix + 1] = anchor_row + 1
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 3 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix] = anchor_row + 3
+                new_lowest_free_rows[col_ix + 1] = anchor_row + 1
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_representation[anchor_row, col_ix + 1] = 1
@@ -474,7 +487,8 @@ class RCorner:
                                         np.array([2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type)
+                                        self.feature_type,
+                                        False)
 
                                                                                     # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -490,10 +504,10 @@ class RCorner:
         # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
                 # Bottom-right corner
                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
-                new_lowest_free_rows = current_state.lowest_free_rows.copy()
-                new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1
-                new_lowest_free_rows[col_ix + 2] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_rows):
+                if not anchor_row + 2 > current_state.num_rows:
+                    new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                    new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1
+                    new_lowest_free_rows[col_ix + 2] = anchor_row + 2
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix + 2] = 1
@@ -504,7 +518,8 @@ class RCorner:
                                             np.array([3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type)
+                                            self.feature_type,
+                                            False)
 
                                                                                         # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -516,9 +531,9 @@ class RCorner:
 
                 # Top-left corner
                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]) - 1)
-                new_lowest_free_rows = current_state.lowest_free_rows.copy()
-                new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_rows):
+                if not anchor_row + 2 > current_state.num_rows:
+                    new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                    new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix] = 1
@@ -529,7 +544,8 @@ class RCorner:
                                             np.array([1, 3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type)
+                                            self.feature_type,
+                                            False)
 
                                                                                         # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -561,9 +577,9 @@ class LCorner:
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             # Top-left corner
             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 2)
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 3 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row + 2, col_ix + 1] = 1
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
@@ -574,7 +590,8 @@ class LCorner:
                                         np.array([1, 1, 2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type)
+                                        self.feature_type,
+                                        False)
 
                                                                                     # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -586,10 +603,10 @@ class LCorner:
 
             # Bottom-right corner
             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
-            new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix + 1] = anchor_row + 3
-            new_lowest_free_rows[col_ix] = anchor_row + 1
-            if not numba_any(new_lowest_free_rows > current_state.num_rows):
+            if not anchor_row + 3 > current_state.num_rows:
+                new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                new_lowest_free_rows[col_ix + 1] = anchor_row + 3
+                new_lowest_free_rows[col_ix] = anchor_row + 1
                 new_representation = current_state.representation.copy()
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
                 new_representation[anchor_row, col_ix] = 1
@@ -600,7 +617,8 @@ class LCorner:
                                         np.array([2], dtype=np.int8),
                                         1,
                                         self.num_features,
-                                        self.feature_type)
+                                        self.feature_type,
+                                        False)
 
                                                                                     # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -617,10 +635,10 @@ class LCorner:
         # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
                 # Bottom-left corner (= 'hole' in top-right corner)
                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
-                new_lowest_free_rows = current_state.lowest_free_rows.copy()
-                new_lowest_free_rows[col_ix] = anchor_row + 2
-                new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 1
-                if not numba_any(new_lowest_free_rows > current_state.num_rows):
+                if not anchor_row + 2 > current_state.num_rows:
+                    new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                    new_lowest_free_rows[col_ix] = anchor_row + 2
+                    new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 1
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row + 1, col_ix] = 1
@@ -631,7 +649,8 @@ class LCorner:
                                             np.array([3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type)
+                                            self.feature_type,
+                                            False)
                                                                                         # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
                                             # current_state.array_of_rows_with_holes,
@@ -642,9 +661,9 @@ class LCorner:
 
                 # Top-right corner
                 anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]) - 1, current_state.lowest_free_rows[col_ix + 2])
-                new_lowest_free_rows = current_state.lowest_free_rows.copy()
-                new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
-                if not numba_any(new_lowest_free_rows > current_state.num_rows):
+                if not anchor_row + 2 > current_state.num_rows:
+                    new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                    new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
                     new_representation = current_state.representation.copy()
                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
                     new_representation[anchor_row, col_ix + 2] = 1
@@ -655,7 +674,8 @@ class LCorner:
                                             np.array([1, 3], dtype=np.int8),
                                             0.5,
                                             self.num_features,
-                                            self.feature_type)
+                                            self.feature_type,
+                                            False)
 
                                                                                         # current_state.col_transitions_per_col,
                                             # current_state.row_transitions_per_col,
@@ -666,17 +686,17 @@ class LCorner:
                     after_states.append(new_state)
         return after_states
 
-
-@njit(cache=True)
-def numba_any(arr):
-    found = False
-    i = 0
-    arr_len = len(arr)
-    while not found and i < arr_len:
-        if arr[i]:
-            found = True
-        i += 1
-    return found
+#
+# @njit(cache=True)
+# def numba_any(arr):
+#     found = False
+#     i = 0
+#     arr_len = len(arr)
+#     while not found and i < arr_len:
+#         if arr[i]:
+#             found = True
+#         i += 1
+#     return found
 
 
 

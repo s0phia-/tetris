@@ -1,5 +1,7 @@
 import numpy as np
-from tetris import state, tetromino
+from tetris import state, tetromino, tetromino_one_class
+import numba
+from numba import njit, jitclass, float64, int8, bool_, int64
 import pprint
 import collections
 import time
@@ -9,6 +11,23 @@ from IPython.display import clear_output
 import time
 
 
+specTetris = [
+    ('num_columns', int8),
+    ('num_rows', int8),
+    ('vebose', bool_),
+    ('tetromino_size', int8),
+    ('feature_type', numba.types.string),
+    ('num_features', int8),
+    ('max_cleared_test_lines', int64),
+    ('game_over', bool_),
+    ('current_state', state.State.class_type.instance_type),
+    ('tetromino_handler', tetromino_one_class.Tetromino.class_type.instance_type),
+    ('cleared_lines', int64),
+    ('cumulative_steps', int64)
+]
+
+
+@jitclass(specTetris)
 class Tetris:
     """
     Tetris for reinforcement learning applications.
@@ -27,7 +46,7 @@ class Tetris:
                  tetromino_size=4,
                  feature_type="bcts",
                  num_features=8,
-                 max_cleared_test_lines=np.inf):
+                 max_cleared_test_lines=100000000000):
         """
         
         :param num_columns: 
@@ -42,9 +61,9 @@ class Tetris:
         self.tetromino_size = tetromino_size
         # self.agent = agent
         self.verbose = verbose
-        # self.target_update = target_update
         self.num_features = num_features
         self.feature_type = feature_type
+        self.max_cleared_test_lines = max_cleared_test_lines
         self.game_over = False
         self.current_state = state.State(representation=np.zeros((self.num_rows, self.num_columns), dtype=np.bool_),
                                          lowest_free_rows=np.zeros(self.num_columns, dtype=np.int8),
@@ -53,26 +72,28 @@ class Tetris:
                                          pieces_per_changed_row=np.array([0], dtype=np.int8),
                                          landing_height_bonus=0.0,
                                          num_features=self.num_features,
-                                         feature_type="bcts")
+                                         feature_type="bcts",
+                                         terminal_state=False
+                                         )
                                          # col_transitions_per_col=np.zeros(self.num_columns, dtype=np.int8),
                                          # row_transitions_per_col=np.zeros(self.num_columns + 1, dtype=np.int8),
                                          # array_of_rows_with_holes=np.array([100], dtype=np.int8),
                                          # holes_per_col=np.zeros(self.num_columns, dtype=np.int8),
                                          # hole_depths_per_col=np.zeros(self.num_columns, dtype=np.int8),
                                          # cumulative_wells_per_col=np.zeros(self.num_columns, dtype=np.int8))
-        self.tetrominos = [
-            tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
-            tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
-            tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
-            tetromino.Square(self.feature_type, self.num_features, self.num_columns),
-            tetromino.SnakeR(self.feature_type, self.num_features, self.num_columns),
-            tetromino.SnakeL(self.feature_type, self.num_features, self.num_columns),
-            tetromino.T(self.feature_type, self.num_features, self.num_columns)]
-
-        self.tetromino_sampler = tetromino.TetrominoSamplerRandom(self.tetrominos)
+        # self.tetrominos = [
+        #     tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
+        #     tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
+        #     tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
+        #     tetromino.Square(self.feature_type, self.num_features, self.num_columns),
+        #     tetromino.SnakeR(self.feature_type, self.num_features, self.num_columns),
+        #     tetromino.SnakeL(self.feature_type, self.num_features, self.num_columns),
+        #     tetromino.T(self.feature_type, self.num_features, self.num_columns)]
+        #
+        # self.tetromino_sampler = tetromino.TetrominoSamplerRandom(self.tetrominos)
+        self.tetromino_handler = tetromino_one_class.Tetromino(self.feature_type, self.num_features, self.num_columns)
         self.cleared_lines = 0
         self.cumulative_steps = 0
-        self.max_cleared_test_lines = max_cleared_test_lines
 
     def reset(self):
         self.game_over = False
@@ -83,7 +104,8 @@ class Tetris:
                                          pieces_per_changed_row=np.array([0], dtype=np.int8),
                                          landing_height_bonus=0.0,
                                          num_features=self.num_features,
-                                         feature_type="bcts")
+                                         feature_type="bcts",
+                                         terminal_state=False)
                                          # col_transitions_per_col=np.zeros(self.num_columns, dtype=np.int8),
                                          # row_transitions_per_col=np.zeros(self.num_columns + 1, dtype=np.int8),
                                          # array_of_rows_with_holes=np.array([100], dtype=np.int8),
@@ -102,6 +124,7 @@ class Tetris:
         if not self.game_over:
             self.cleared_lines += after_state.n_cleared_lines
             self.current_state = after_state
+            self.tetromino_handler.next_tetromino()
 
     # def print_board(self, clear_the_output=True):
     #     self.current_state.print_board(clear_the_output=clear_the_output)
@@ -120,23 +143,23 @@ class Tetris:
     #                 print("  ", end=' ')
     #         print("|")
 
-    def print_board_to_string(self, stateX, clear_the_output=False, sleep=0):
-        if clear_the_output:
-            clear_output(wait=True)
-        if sleep > 0:
-            time.sleep(sleep)
-        string = "\n"
-        for row_ix in range(stateX.num_rows):
-            # Start from top
-            row_ix = stateX.num_rows - row_ix - 1
-            string += "|"
-            for col_ix in range(stateX.num_columns):
-                if stateX.representation[row_ix, col_ix]:
-                    string += "██"
-                else:
-                    string += "  "
-            string += "|\n"
-        print(string)
+    # def print_board_to_string(self, stateX, clear_the_output=False, sleep=0):
+    #     if clear_the_output:
+    #         clear_output(wait=True)
+    #     if sleep > 0:
+    #         time.sleep(sleep)
+    #     string = "\n"
+    #     for row_ix in range(stateX.num_rows):
+    #         # Start from top
+    #         row_ix = stateX.num_rows - row_ix - 1
+    #         string += "|"
+    #         for col_ix in range(stateX.num_columns):
+    #             if stateX.representation[row_ix, col_ix]:
+    #                 string += "██"
+    #             else:
+    #                 string += "  "
+    #         string += "|\n"
+    #     print(string)
         # return string
 
     # def print_board_to_string(self, clear_the_output=True, sleep=0):

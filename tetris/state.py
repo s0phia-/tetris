@@ -30,7 +30,7 @@ spec = [
     ('cleared_rows_relative_to_anchor', bool_[:]),
     ('features_are_calculated', bool_),
     ('features', float64[:]),
-    ('terminal_state', bool_)#,
+    ('terminal_state', bool_)  #,
     # ('reward', int8),
     # ('value_estimate', float64),
     # ('col_transitions_per_col', int8[:]),
@@ -53,7 +53,8 @@ class State(object):
                  pieces_per_changed_row, #=np.array([0], dtype=np.int8),
                  landing_height_bonus, # =0.0,
                  num_features, #=8,
-                 feature_type #="bcts",
+                 feature_type, #="bcts",
+                 terminal_state
                  # col_transitions_per_col, #=np.array([0], dtype=np.int8),
                  # row_transitions_per_col, #=np.array([0], dtype=np.int8),
                  # array_of_rows_with_holes, #=np.array([100], dtype=np.int8),
@@ -61,23 +62,23 @@ class State(object):
                  # hole_depths_per_col, #=np.array([0], dtype=np.int8),
                  # cumulative_wells_per_col #=np.array([0], dtype=np.int8)):  # , features=np.zeros(1, dtype=np.float64)
                  ):
-        self.representation = representation
-        self.lowest_free_rows = lowest_free_rows
-        self.num_rows, self.num_columns = representation.shape
-        self.pieces_per_changed_row = pieces_per_changed_row
-        self.landing_height_bonus = landing_height_bonus
-        self.num_features = num_features
-        self.feature_type = feature_type  # "bcts"
-        self.n_cleared_lines = 0
-        self.anchor_row = changed_lines[0]
-        self.cleared_rows_relative_to_anchor = self.clear_lines(changed_lines)
-        # # TODO: REMOVE FOR SPEED
-        # assert np.all(calc_lowest_free_rows(self.representation) == self.lowest_free_rows)
-        self.features_are_calculated = False
-        self.features = np.zeros(self.num_features, dtype=np.float64)
-        # Don't create terminal states in the first place now...
-        # self.terminal_state = check_terminal(self.representation, self.num_rows)  # self.is_terminal()
-        self.terminal_state = False
+        self.terminal_state = terminal_state
+        if not terminal_state:
+            self.representation = representation
+            self.lowest_free_rows = lowest_free_rows
+            self.num_rows, self.num_columns = representation.shape
+            self.pieces_per_changed_row = pieces_per_changed_row
+            self.landing_height_bonus = landing_height_bonus
+            self.num_features = num_features
+            self.feature_type = feature_type  # "bcts"
+            self.n_cleared_lines = 0
+            self.anchor_row = changed_lines[0]
+            self.cleared_rows_relative_to_anchor = self.clear_lines(changed_lines)
+            # # TODO: REMOVE FOR SPEED
+            # assert np.all(calc_lowest_free_rows(self.representation) == self.lowest_free_rows)
+            self.features_are_calculated = False
+            self.features = np.zeros(self.num_features, dtype=np.float64)
+
         # self.reward = 0 if self.terminal_state else self.n_cleared_lines
         # self.value_estimate = 0.0
         # self.anchor_col = changed_cols[0]
