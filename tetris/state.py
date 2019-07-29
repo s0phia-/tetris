@@ -1,6 +1,6 @@
 import numpy as np
 import numba
-from numba import njit, jitclass, float64, int8, bool_, int64
+from numba import njit, jitclass, float64, int64, bool_, int64
 # import torch
 
 specTerm = [
@@ -15,30 +15,30 @@ class TerminalState:
 
 spec = [
     ('representation', bool_[:, :]),
-    ('lowest_free_rows', int8[:]),
-    # ('anchor_col', int8),
-    ('changed_lines', int8[:]),
-    ('pieces_per_changed_row', int8[:]),
+    ('lowest_free_rows', int64[:]),
+    # ('anchor_col', int64),
+    ('changed_lines', int64[:]),
+    ('pieces_per_changed_row', int64[:]),
     ('landing_height_bonus', float64),
-    ('num_features', int8),
+    ('num_features', int64),
     ('feature_type', numba.types.string),
-    ('num_rows', int8),
+    ('num_rows', int64),
     ('num_columns', int64),
-    ('n_cleared_lines', int8),
-    # ('changed_cols', int8[:]),
-    ('anchor_row', int8),
+    ('n_cleared_lines', int64),
+    # ('changed_cols', int64[:]),
+    ('anchor_row', int64),
     ('cleared_rows_relative_to_anchor', bool_[:]),
     ('features_are_calculated', bool_),
     ('features', float64[:]),
     ('terminal_state', bool_)  #,
-    # ('reward', int8),
+    # ('reward', int64),
     # ('value_estimate', float64),
-    # ('col_transitions_per_col', int8[:]),
-    # ('row_transitions_per_col', int8[:]),
-    # ('holes_per_col', int8[:]),
-    # ('hole_depths_per_col', int8[:]),
-    # ('cumulative_wells_per_col', int8[:]),
-    # ('array_of_rows_with_holes', int8[:])
+    # ('col_transitions_per_col', int64[:]),
+    # ('row_transitions_per_col', int64[:]),
+    # ('holes_per_col', int64[:]),
+    # ('hole_depths_per_col', int64[:]),
+    # ('cumulative_wells_per_col', int64[:]),
+    # ('array_of_rows_with_holes', int64[:])
 ]
 
 # FOR SET: numba.types.containers.Set
@@ -48,19 +48,19 @@ class State(object):
     def __init__(self,
                  representation,
                  lowest_free_rows,
-                 # changed_cols, #=np.array([0], dtype=np.int8),
-                 changed_lines, #=np.array([0], dtype=np.int8),
-                 pieces_per_changed_row, #=np.array([0], dtype=np.int8),
+                 # changed_cols, #=np.array([0], dtype=np.int64),
+                 changed_lines, #=np.array([0], dtype=np.int64),
+                 pieces_per_changed_row, #=np.array([0], dtype=np.int64),
                  landing_height_bonus, # =0.0,
                  num_features, #=8,
                  feature_type, #="bcts",
                  terminal_state
-                 # col_transitions_per_col, #=np.array([0], dtype=np.int8),
-                 # row_transitions_per_col, #=np.array([0], dtype=np.int8),
-                 # array_of_rows_with_holes, #=np.array([100], dtype=np.int8),
-                 # holes_per_col, #=np.array([0], dtype=np.int8),
-                 # hole_depths_per_col, #=np.array([0], dtype=np.int8),
-                 # cumulative_wells_per_col #=np.array([0], dtype=np.int8)):  # , features=np.zeros(1, dtype=np.float64)
+                 # col_transitions_per_col, #=np.array([0], dtype=np.int64),
+                 # row_transitions_per_col, #=np.array([0], dtype=np.int64),
+                 # array_of_rows_with_holes, #=np.array([100], dtype=np.int64),
+                 # holes_per_col, #=np.array([0], dtype=np.int64),
+                 # hole_depths_per_col, #=np.array([0], dtype=np.int64),
+                 # cumulative_wells_per_col #=np.array([0], dtype=np.int64)):  # , features=np.zeros(1, dtype=np.float64)
                  ):
         self.terminal_state = terminal_state
         if not terminal_state:
@@ -89,12 +89,12 @@ class State(object):
         # self.hole_depths_per_col = hole_depths_per_col.copy()
         # self.cumulative_wells_per_col = cumulative_wells_per_col.copy()
 
-        # self.col_transitions_per_col = np.zeros(self.num_columns, dtype=np.int8)
-        # self.row_transitions_per_col = np.zeros(self.num_columns+1, dtype=np.int8)
-        # self.array_of_rows_with_holes = np.array([100], dtype=np.int8)
-        # self.holes_per_col = np.zeros(self.num_columns, dtype=np.int8)
-        # self.hole_depths_per_col = np.zeros(self.num_columns, dtype=np.int8)
-        # self.cumulative_wells_per_col = np.zeros(self.num_columns, dtype=np.int8)
+        # self.col_transitions_per_col = np.zeros(self.num_columns, dtype=np.int64)
+        # self.row_transitions_per_col = np.zeros(self.num_columns+1, dtype=np.int64)
+        # self.array_of_rows_with_holes = np.array([100], dtype=np.int64)
+        # self.holes_per_col = np.zeros(self.num_columns, dtype=np.int64)
+        # self.hole_depths_per_col = np.zeros(self.num_columns, dtype=np.int64)
+        # self.cumulative_wells_per_col = np.zeros(self.num_columns, dtype=np.int64)
 
     # def __repr__(self):
     #     return self.print_board_to_string()
@@ -164,7 +164,7 @@ class State(object):
             # print(self)
             representation = self.representation
             lowest_free_rows = self.lowest_free_rows
-            lines_to_clear = changed_lines[full_lines].astype(np.int8)
+            lines_to_clear = changed_lines[full_lines].astype(np.int64)
             mask_keep = np.ones(len(representation), dtype=np.bool_)
             mask_keep[lines_to_clear] = False
             new_cols = np.zeros((n_cleared_lines, num_columns), dtype=np.bool_)
@@ -188,21 +188,19 @@ class State(object):
     # def update_bcts_features(self, old_feature_values, old_rows_with_holes):
     #     pass
 
-    # TODO: Optimization ideas: representation to bools
+    # TODO: Optimization ideas: representation to bools -- seemes to work!
     # TODO:                     only count hole depth first time when an actual hole is found
-    # TODO:                     minimize calls to self (define variables in method) or completely outsource it!?
-    # TODO:                     only create empty vectors of size "relevant cols".
 
     def calc_bcts_features(self):
         rows_with_holes_set = {100}
         representation = self.representation
         num_rows, num_columns = representation.shape
         lowest_free_rows = self.lowest_free_rows
-        # col_transitions_per_col = np.zeros(num_columns, dtype=np.int8)
-        # row_transitions_per_col = np.zeros(num_columns + 1, dtype=np.int8)
-        # holes_per_col = np.zeros(num_columns, dtype=np.int8)
-        # hole_depths_per_col = np.zeros(num_columns, dtype=np.int8)
-        # cumulative_wells_per_col = np.zeros(num_columns, dtype=np.int8)
+        # col_transitions_per_col = np.zeros(num_columns, dtype=np.int64)
+        # row_transitions_per_col = np.zeros(num_columns + 1, dtype=np.int64)
+        # holes_per_col = np.zeros(num_columns, dtype=np.int64)
+        # hole_depths_per_col = np.zeros(num_columns, dtype=np.int64)
+        # cumulative_wells_per_col = np.zeros(num_columns, dtype=np.int64)
         col_transitions = 0
         row_transitions = 0
         holes = 0
@@ -432,11 +430,11 @@ class State(object):
     #     relevant_cols = np.arange(min_relevant_col, max_relevant_col + 1)
     #     num_relevant_cols = len(relevant_cols)
     #     # relevant_lowest_free_rows = lowest_free_rows
-    #     col_transitions_per_col = np.zeros(num_columns, dtype=np.int8)
-    #     row_transitions_per_col = np.zeros(num_columns + 1, dtype=np.int8)
-    #     holes_per_col = np.zeros(num_columns, dtype=np.int8)
-    #     hole_depths_per_col = np.zeros(num_columns, dtype=np.int8)
-    #     cumulative_wells_per_col = np.zeros(num_columns, dtype=np.int8)
+    #     col_transitions_per_col = np.zeros(num_columns, dtype=np.int64)
+    #     row_transitions_per_col = np.zeros(num_columns + 1, dtype=np.int64)
+    #     holes_per_col = np.zeros(num_columns, dtype=np.int64)
+    #     hole_depths_per_col = np.zeros(num_columns, dtype=np.int64)
+    #     cumulative_wells_per_col = np.zeros(num_columns, dtype=np.int64)
     #     for col_ix in relevant_cols:
     #         lowest_free_row = lowest_free_rows[col_ix]
     #         # There is at least one column_transition from the highest full cell (or the bottom which is assumed to be full) to "the top".
@@ -645,7 +643,7 @@ class State(object):
     #
     #     rows_with_holes_set.remove(100)
     #     rows_with_holes_set = rows_with_holes_set.union(set(self.array_of_rows_with_holes))
-    #     self.array_of_rows_with_holes = np.array(list(rows_with_holes_set), dtype=np.int8)
+    #     self.array_of_rows_with_holes = np.array(list(rows_with_holes_set), dtype=np.int64)
     #     rows_with_holes = len(rows_with_holes_set)
     #     self.col_transitions_per_col[relevant_cols] = col_transitions_per_col[relevant_cols]
     #     column_transitions = np.sum(self.col_transitions_per_col)
@@ -670,11 +668,11 @@ class State(object):
     #     representation = self.representation
     #     num_rows, num_columns = representation.shape
     #     lowest_free_rows = self.lowest_free_rows
-    #     col_transitions_per_col = np.zeros(num_columns, dtype=np.int8)
-    #     row_transitions_per_col = np.zeros(num_columns + 1, dtype=np.int8)
-    #     holes_per_col = np.zeros(num_columns, dtype=np.int8)
-    #     hole_depths_per_col = np.zeros(num_columns, dtype=np.int8)
-    #     cumulative_wells_per_col = np.zeros(num_columns, dtype=np.int8)
+    #     col_transitions_per_col = np.zeros(num_columns, dtype=np.int64)
+    #     row_transitions_per_col = np.zeros(num_columns + 1, dtype=np.int64)
+    #     holes_per_col = np.zeros(num_columns, dtype=np.int64)
+    #     hole_depths_per_col = np.zeros(num_columns, dtype=np.int64)
+    #     cumulative_wells_per_col = np.zeros(num_columns, dtype=np.int64)
     #     # row_transitions = 0
     #     for col_ix, lowest_free_row in enumerate(lowest_free_rows):
     #         # There is at least one column_transition from the highest full cell (or the bottom which is assumed to be full) to "the top".
@@ -879,7 +877,7 @@ class State(object):
     #                         row_transitions_per_col[col_ix] += 1
     #
     #     rows_with_holes_set.remove(100)
-    #     self.array_of_rows_with_holes = np.array(list(rows_with_holes_set), dtype=np.int8)
+    #     self.array_of_rows_with_holes = np.array(list(rows_with_holes_set), dtype=np.int64)
     #     rows_with_holes = len(rows_with_holes_set)
     #     self.col_transitions_per_col = col_transitions_per_col
     #     column_transitions = np.sum(col_transitions_per_col)
@@ -922,7 +920,7 @@ class State(object):
 #     full_lines = np.where(is_full)[0]
 #     n_cleared_lines = len(full_lines)
 #     if n_cleared_lines > 0:
-#         lines_to_clear = changed_lines[full_lines].astype(np.int8)
+#         lines_to_clear = changed_lines[full_lines].astype(np.int64)
 #         mask_keep = np.ones(len(representation), dtype=np.bool_)
 #         mask_keep[lines_to_clear] = False
 #         new_cols = np.zeros((n_cleared_lines, num_columns), dtype=np.bool_)
@@ -976,7 +974,7 @@ def numba_sum(arr):
 # @njit(fastmath=True, cache=True)
 # def calc_lowest_free_rows(rep):
 #     num_rows, n_cols = rep.shape
-#     lowest_free_rows = np.zeros(n_cols, dtype=np.int8)
+#     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)
 #     for col_ix in range(n_cols):
 #         lowest = 0
 #         for row_ix in range(num_rows - 1, -1, -1):

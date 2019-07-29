@@ -1,14 +1,14 @@
 import numpy as np
-from numba import njit, int8, jitclass
+from numba import njit, int64, jitclass
 import time
 import numpy as np
 from numba import njit
 
 
 representation = np.zeros((10, 10), dtype=np.bool_)
-changed_lines = np.array([1, 2], dtype=np.int8)
-lowest_free_rows = np.zeros(10, dtype=np.int8)
-num_columns = np.int8(10)
+changed_lines = np.array([1, 2], dtype=np.int64)
+lowest_free_rows = np.zeros(10, dtype=np.int64)
+num_columns = np.int64(10)
 
 """
 update bool with 1s
@@ -85,7 +85,7 @@ No argument names.... need all optional arguments!
 """
 @njit
 def np_arange():
-    a = np.arange(1, 5, 1, np.int8)
+    a = np.arange(1, 5, 1, np.int64)
     return a
 
 np_arange()
@@ -129,11 +129,11 @@ b = np.random.randint(0, 2, num, dtype=np.bool)
 np.random.seed(1)
 i_ = np.random.randint(0, 2, num, dtype=np.int_)
 np.random.seed(1)
-i64 = np.random.randint(0, 2, num, dtype=np.int8)
+i64 = np.random.randint(0, 2, num, dtype=np.int64)
 np.random.seed(1)
 i32 = np.random.randint(0, 2, num, dtype=np.int32)
 np.random.seed(1)
-i8 = np.random.randint(0, 2, num, dtype=np.int8)
+i8 = np.random.randint(0, 2, num, dtype=np.int64)
 
 
 """
@@ -201,7 +201,7 @@ if element:
 if element == 1
 
 Result:
-Only np.int8 is reasonably fast
+Only np.int64 is reasonably fast
 
 """
 
@@ -268,11 +268,11 @@ b = np.random.randint(0, 2, num, dtype=np.bool)
 np.random.seed(1)
 i_ = np.random.randint(0, 2, num, dtype=np.int_)
 np.random.seed(1)
-i64 = np.random.randint(0, 2, num, dtype=np.int8)
+i64 = np.random.randint(0, 2, num, dtype=np.int64)
 np.random.seed(1)
 i32 = np.random.randint(0, 2, num, dtype=np.int32)
 np.random.seed(1)
-i8 = np.random.randint(0, 2, num, dtype=np.int8)
+i8 = np.random.randint(0, 2, num, dtype=np.int64)
 
 @njit
 def sum_a_lot(input):
@@ -331,8 +331,8 @@ Rather define variable in method. Outsourcing completely is not needed.
 '''
 
 spec = [
-    ('acc', int8),
-    ('bla', int8)
+    ('acc', int64),
+    ('bla', int64)
 ]
 
 
@@ -415,8 +415,8 @@ Rather define variable in method. Outsourcing completely is not needed.
 '''
 
 spec = [
-    ('acc', int8[:]),
-    ('bla', int8)
+    ('acc', int64[:]),
+    ('bla', int64)
 ]
 
 

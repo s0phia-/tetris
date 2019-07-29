@@ -11,7 +11,8 @@ class MLearning:
     """
     M-learning, tailored to application in Tetris.
     """
-    def __init__(self, feature_type,
+    def __init__(self,
+                 feature_type,
                  num_columns,
                  verbose, verbose_stew,
                  lambda_min, lambda_max, num_lambdas,
@@ -29,7 +30,7 @@ class MLearning:
                                        'eroded', 'hole_depth'])  # Uses BCTS features.
         self.verbose = verbose
         self.verbose_stew = verbose_stew
-        self.max_choice_set_size = 35  # There are never more than 34 actions in Tetris
+        self.max_choice_set_size = 34  # There are never more than 34 actions in Tetris
         self.tetrominos = [tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
                            tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
                            tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),

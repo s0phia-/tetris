@@ -1,7 +1,7 @@
 import numpy as np
 from tetris import state, tetromino, tetromino_one_class
 import numba
-from numba import njit, jitclass, float64, int8, bool_, int64
+from numba import njit, jitclass, float64, int64, bool_, int64
 import pprint
 import collections
 import time
@@ -12,12 +12,12 @@ import time
 
 
 specTetris = [
-    ('num_columns', int8),
-    ('num_rows', int8),
+    ('num_columns', int64),
+    ('num_rows', int64),
     ('vebose', bool_),
-    ('tetromino_size', int8),
+    ('tetromino_size', int64),
     ('feature_type', numba.types.string),
-    ('num_features', int8),
+    ('num_features', int64),
     ('max_cleared_test_lines', int64),
     ('game_over', bool_),
     ('current_state', state.State.class_type.instance_type),
@@ -42,7 +42,6 @@ class Tetris:
     def __init__(self,
                  num_columns,
                  num_rows,
-                 verbose=False,
                  tetromino_size=4,
                  feature_type="bcts",
                  num_features=8,
@@ -60,27 +59,20 @@ class Tetris:
         self.num_rows = num_rows
         self.tetromino_size = tetromino_size
         # self.agent = agent
-        self.verbose = verbose
+        # self.verbose = verbose
         self.num_features = num_features
         self.feature_type = feature_type
         self.max_cleared_test_lines = max_cleared_test_lines
         self.game_over = False
-        self.current_state = state.State(representation=np.zeros((self.num_rows, self.num_columns), dtype=np.bool_),
-                                         lowest_free_rows=np.zeros(self.num_columns, dtype=np.int8),
-                                         # changed_cols=np.array([0], dtype=np.int8),
-                                         changed_lines=np.array([0], dtype=np.int8),
-                                         pieces_per_changed_row=np.array([0], dtype=np.int8),
-                                         landing_height_bonus=0.0,
-                                         num_features=self.num_features,
-                                         feature_type="bcts",
-                                         terminal_state=False
+        self.current_state = state.State(np.zeros((self.num_rows, self.num_columns), dtype=np.bool_),  # representation=
+                                         np.zeros(self.num_columns, dtype=np.int64),  # lowest_free_rows=
+                                         np.array([0], dtype=np.int64),  # changed_lines=
+                                         np.array([0], dtype=np.int64),  # pieces_per_changed_row=
+                                         0.0,  # landing_height_bonus=
+                                         self.num_features,  # num_features=
+                                         "bcts",  # feature_type=
+                                         False  # terminal_state=
                                          )
-                                         # col_transitions_per_col=np.zeros(self.num_columns, dtype=np.int8),
-                                         # row_transitions_per_col=np.zeros(self.num_columns + 1, dtype=np.int8),
-                                         # array_of_rows_with_holes=np.array([100], dtype=np.int8),
-                                         # holes_per_col=np.zeros(self.num_columns, dtype=np.int8),
-                                         # hole_depths_per_col=np.zeros(self.num_columns, dtype=np.int8),
-                                         # cumulative_wells_per_col=np.zeros(self.num_columns, dtype=np.int8))
         # self.tetrominos = [
         #     tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
         #     tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
@@ -97,21 +89,21 @@ class Tetris:
 
     def reset(self):
         self.game_over = False
-        self.current_state = state.State(representation=np.zeros((self.num_rows, self.num_columns), dtype=np.bool_),
-                                         lowest_free_rows=np.zeros(self.num_columns, dtype=np.int8),
-                                         # changed_cols=np.array([0], dtype=np.int8),
-                                         changed_lines=np.array([0], dtype=np.int8),
-                                         pieces_per_changed_row=np.array([0], dtype=np.int8),
-                                         landing_height_bonus=0.0,
-                                         num_features=self.num_features,
-                                         feature_type="bcts",
-                                         terminal_state=False)
-                                         # col_transitions_per_col=np.zeros(self.num_columns, dtype=np.int8),
-                                         # row_transitions_per_col=np.zeros(self.num_columns + 1, dtype=np.int8),
-                                         # array_of_rows_with_holes=np.array([100], dtype=np.int8),
-                                         # holes_per_col=np.zeros(self.num_columns, dtype=np.int8),
-                                         # hole_depths_per_col=np.zeros(self.num_columns, dtype=np.int8),
-                                         # cumulative_wells_per_col=np.zeros(self.num_columns, dtype=np.int8))
+        self.current_state = state.State(np.zeros((self.num_rows, self.num_columns), dtype=np.bool_),  # representation=
+                                         np.zeros(self.num_columns, dtype=np.int64),  # lowest_free_rows=
+                                         np.array([0], dtype=np.int64),  # changed_lines=
+                                         np.array([0], dtype=np.int64),  # pieces_per_changed_row=
+                                         0.0,  # landing_height_bonus=
+                                         self.num_features,  # num_features=
+                                         "bcts",  # feature_type=
+                                         False  # terminal_state=
+                                         )
+                                         # col_transitions_per_col=np.zeros(self.num_columns, dtype=np.int64),
+                                         # row_transitions_per_col=np.zeros(self.num_columns + 1, dtype=np.int64),
+                                         # array_of_rows_with_holes=np.array([100], dtype=np.int64),
+                                         # holes_per_col=np.zeros(self.num_columns, dtype=np.int64),
+                                         # hole_depths_per_col=np.zeros(self.num_columns, dtype=np.int64),
+                                         # cumulative_wells_per_col=np.zeros(self.num_columns, dtype=np.int64))
         self.current_state.calc_bcts_features()
         self.cleared_lines = 0
 
@@ -126,6 +118,21 @@ class Tetris:
             self.current_state = after_state
             self.tetromino_handler.next_tetromino()
 
+    def evaluate(self, agent):  # visualize=False, clear_the_output=False, sleep=0
+        self.reset()
+        # _ = env.print_board_to_string(env.current_state, clear_the_output, sleep)
+        while not self.game_over and self.cleared_lines <= self.max_cleared_test_lines:
+            # current_tetromino = env.tetromino_sampler.next_tetromino()
+            # env.current_tetromino
+            # print(current_tetromino)
+            # env.tetromino_handler.next_tetromino()
+            # print(env.tetromino_handler.current_tetromino)
+            after_state = agent.choose_action_test(start_state=self.current_state, start_tetromino=self.tetromino_handler)
+            self.make_step(after_state)
+            # if visualize and not self.current_state.terminal_state:
+            #     self.print_board_to_string(self.current_state, clear_the_output, sleep)
+        # print(env.cleared_lines)
+        return self.cleared_lines
     # def print_board(self, clear_the_output=True):
     #     self.current_state.print_board(clear_the_output=clear_the_output)
 

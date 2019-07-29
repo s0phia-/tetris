@@ -1,6 +1,6 @@
 import numpy as np
 import numba
-from numba import njit, jitclass, float64, int8, bool_
+from numba import njit, jitclass, float64, int64, bool_
 from tetris import state
 from numba.typed import List
 
@@ -10,8 +10,8 @@ from numba.typed import List
 
 specT = [
     ('feature_type', numba.types.string),
-    ('num_features', int8),
-    ('num_columns', int8)
+    ('num_features', int64),
+    ('num_columns', int64)
 ]
 
 
@@ -49,9 +49,9 @@ class Straight:
                 new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.array([col_ix], dtype=np.int8),
-                                        np.arange(anchor_row, anchor_row + 4, 1, np.int8),
-                                        np.array([1, 1, 1, 1], dtype=np.int8),
+                                        # np.array([col_ix], dtype=np.int64),
+                                        np.arange(anchor_row, anchor_row + 4, 1, np.int64),
+                                        np.array([1, 1, 1, 1], dtype=np.int64),
                                         1.5,
                                         self.num_features,
                                         self.feature_type,
@@ -77,9 +77,9 @@ class Straight:
                     new_representation[anchor_row, col_ix:(col_ix + 4)] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.arange(col_ix, col_ix + 4, 1, np.int8),
-                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
-                                            np.array([4], dtype=np.int8),
+                                            # np.arange(col_ix, col_ix + 4, 1, np.int64),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+                                            np.array([4], dtype=np.int64),
                                             0,
                                             self.num_features,
                                             self.feature_type,
@@ -120,9 +120,9 @@ class Square:
                 new_representation[anchor_row:(anchor_row + 2), col_ix:(col_ix + 2)] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
-                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
-                                        np.array([2, 2], dtype=np.int8),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int64),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+                                        np.array([2, 2], dtype=np.int64),
                                         0.5,
                                         self.num_features,
                                         self.feature_type,
@@ -167,9 +167,9 @@ class SnakeR:
                 new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
-                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
-                                        np.array([1, 2], dtype=np.int8),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int64),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+                                        np.array([1, 2], dtype=np.int64),
                                         1,
                                         self.num_features,
                                         self.feature_type,
@@ -197,9 +197,9 @@ class SnakeR:
                     new_representation[anchor_row + 1, (col_ix + 1):(col_ix + 3)] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
-                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
-                                            np.array([2], dtype=np.int8),
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int64),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+                                            np.array([2], dtype=np.int64),
                                             0.5,
                                             self.num_features,
                                             self.feature_type,
@@ -243,9 +243,9 @@ class SnakeL:
                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix + 1] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
-                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
-                                        np.array([1, 2], dtype=np.int8),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int64),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+                                        np.array([1, 2], dtype=np.int64),
                                         1,
                                         self.num_features,
                                         self.feature_type,
@@ -273,9 +273,9 @@ class SnakeL:
                     new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
-                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
-                                            np.array([2], dtype=np.int8),
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int64),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+                                            np.array([2], dtype=np.int64),
                                             0.5,
                                             self.num_features,
                                             self.feature_type,
@@ -320,9 +320,9 @@ class T:
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
-                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
-                                        np.array([1, 2], dtype=np.int8),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int64),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+                                        np.array([1, 2], dtype=np.int64),
                                         1,
                                         self.num_features,
                                         self.feature_type,
@@ -347,9 +347,9 @@ class T:
                 new_representation[anchor_row + 1, col_ix + 1] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
-                                        np.arange(anchor_row, anchor_row + 2, 1, np.int8),
-                                        np.array([1, 2], dtype=np.int8),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int64),
+                                        np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+                                        np.array([1, 2], dtype=np.int64),
                                         1,
                                         self.num_features,
                                         self.feature_type,
@@ -380,9 +380,9 @@ class T:
                     new_representation[anchor_row + 1, col_ix + 1] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
-                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
-                                            np.array([3], dtype=np.int8),
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int64),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+                                            np.array([3], dtype=np.int64),
                                             0.5,
                                             self.num_features,
                                             self.feature_type,
@@ -409,9 +409,9 @@ class T:
                     new_representation[anchor_row, col_ix + 1] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
-                                            np.arange(anchor_row, anchor_row + 2, 1, np.int8),
-                                            np.array([1, 3], dtype=np.int8),
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int64),
+                                            np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+                                            np.array([1, 3], dtype=np.int64),
                                             0.5,
                                             self.num_features,
                                             self.feature_type,
@@ -455,9 +455,9 @@ class RCorner:
                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
-                                        np.arange(anchor_row, anchor_row + 3, 1, np.int8),
-                                        np.array([1, 1, 2], dtype=np.int8),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int64),
+                                        np.arange(anchor_row, anchor_row + 3, 1, np.int64),
+                                        np.array([1, 1, 2], dtype=np.int64),
                                         1,
                                         self.num_features,
                                         self.feature_type,
@@ -482,9 +482,9 @@ class RCorner:
                 new_representation[anchor_row, col_ix + 1] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
-                                        np.arange(anchor_row, anchor_row + 1, 1, np.int8),
-                                        np.array([2], dtype=np.int8),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int64),
+                                        np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+                                        np.array([2], dtype=np.int64),
                                         1,
                                         self.num_features,
                                         self.feature_type,
@@ -513,9 +513,9 @@ class RCorner:
                     new_representation[anchor_row + 1, col_ix + 2] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
-                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
-                                            np.array([3], dtype=np.int8),
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int64),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+                                            np.array([3], dtype=np.int64),
                                             0.5,
                                             self.num_features,
                                             self.feature_type,
@@ -539,9 +539,9 @@ class RCorner:
                     new_representation[anchor_row, col_ix] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
-                                            np.arange(anchor_row, anchor_row + 2, 1, np.int8),
-                                            np.array([1, 3], dtype=np.int8),
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int64),
+                                            np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+                                            np.array([1, 3], dtype=np.int64),
                                             0.5,
                                             self.num_features,
                                             self.feature_type,
@@ -585,9 +585,9 @@ class LCorner:
                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
-                                        np.arange(anchor_row, anchor_row + 3, 1, np.int8),
-                                        np.array([1, 1, 2], dtype=np.int8),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int64),
+                                        np.arange(anchor_row, anchor_row + 3, 1, np.int64),
+                                        np.array([1, 1, 2], dtype=np.int64),
                                         1,
                                         self.num_features,
                                         self.feature_type,
@@ -612,9 +612,9 @@ class LCorner:
                 new_representation[anchor_row, col_ix] = 1
                 new_state = state.State(new_representation,
                                         new_lowest_free_rows,
-                                        # np.arange(col_ix, col_ix + 2, 1, np.int8),
-                                        np.arange(anchor_row, anchor_row + 1, 1, np.int8),
-                                        np.array([2], dtype=np.int8),
+                                        # np.arange(col_ix, col_ix + 2, 1, np.int64),
+                                        np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+                                        np.array([2], dtype=np.int64),
                                         1,
                                         self.num_features,
                                         self.feature_type,
@@ -644,9 +644,9 @@ class LCorner:
                     new_representation[anchor_row + 1, col_ix] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
-                                            np.arange(anchor_row, anchor_row + 1, 1, np.int8),
-                                            np.array([3], dtype=np.int8),
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int64),
+                                            np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+                                            np.array([3], dtype=np.int64),
                                             0.5,
                                             self.num_features,
                                             self.feature_type,
@@ -669,9 +669,9 @@ class LCorner:
                     new_representation[anchor_row, col_ix + 2] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.arange(col_ix, col_ix + 3, 1, np.int8),
-                                            np.arange(anchor_row, anchor_row + 2, 1, np.int8),
-                                            np.array([1, 3], dtype=np.int8),
+                                            # np.arange(col_ix, col_ix + 3, 1, np.int64),
+                                            np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+                                            np.array([1, 3], dtype=np.int64),
                                             0.5,
                                             self.num_features,
                                             self.feature_type,
