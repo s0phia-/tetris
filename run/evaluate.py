@@ -6,33 +6,26 @@ import time
 from datetime import datetime
 from numba import njit
 
-time_id = datetime.now().strftime('%Y_%m_%d_%H_%M')
-np.random.seed(1)
+# time_id = datetime.now().strftime('%Y_%m_%d_%H_%M')
+# np.random.seed(1)
 
-import numba.config as c
-print("NUMBA_DISABLE_JIT:", c.DISABLE_JIT)
-c.DISABLE_JIT = 0
+# import numba.config as c
 # print("NUMBA_DISABLE_JIT:", c.DISABLE_JIT)
+# c.DISABLE_JIT = 0
+# # print("NUMBA_DISABLE_JIT:", c.DISABLE_JIT)
 
 
 @njit
-def evaluate(env, agent, num_runs, visualize=False, clear_the_output=False, sleep=0):
+def evaluate(env, agent, num_runs):
     np.random.seed(1)
     rewards = np.zeros(num_runs, dtype=np.int64)
     for i in range(num_runs):
         env.reset()
-        # _ = env.print_board_to_string(env.current_state, clear_the_output, sleep)
         while not env.game_over and env.cleared_lines <= env.max_cleared_test_lines:
-            # current_tetromino = env.tetromino_sampler.next_tetromino()
-            # env.current_tetromino
-            # print(current_tetromino)
-            # env.tetromino_handler.next_tetromino()
-            # print(env.tetromino_handler.current_tetromino)
             after_state = agent.choose_action_test(start_state=env.current_state, start_tetromino=env.tetromino_handler)
             env.make_step(after_state)
             # if visualize and not env.current_state.terminal_state:
             #     env.print_board_to_string(env.current_state, clear_the_output, sleep)
-        # print(env.cleared_lines)
         rewards[i] = env.cleared_lines
     return rewards
 

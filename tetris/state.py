@@ -30,7 +30,8 @@ spec = [
     ('cleared_rows_relative_to_anchor', bool_[:]),
     ('features_are_calculated', bool_),
     ('features', float64[:]),
-    ('terminal_state', bool_)  #,
+    ('terminal_state', bool_)
+    # ('value_estimate', float64)
     # ('reward', int64),
     # ('value_estimate', float64),
     # ('col_transitions_per_col', int64[:]),
@@ -78,6 +79,7 @@ class State(object):
             # assert np.all(calc_lowest_free_rows(self.representation) == self.lowest_free_rows)
             self.features_are_calculated = False
             self.features = np.zeros(self.num_features, dtype=np.float64)
+            # self.value_estimate = 0.0
 
         # self.reward = 0 if self.terminal_state else self.n_cleared_lines
         # self.value_estimate = 0.0

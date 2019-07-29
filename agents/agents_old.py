@@ -3,7 +3,7 @@ import numpy as np
 import stew
 import domtools
 
-from tetris import mcts, tetromino
+from tetris import mcts, tetromino_old
 from numba import njit
 from scipy.stats import binom_test
 from statsmodels.stats.proportion import proportions_ztest
@@ -56,14 +56,14 @@ class RolloutActorCritic:
 
         self.target_update = target_update  # only here for compatibility reasons
 
-        self.tetrominos = [tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.Square(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.SnakeR(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.SnakeL(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.T(self.feature_type, self.num_features, self.num_columns)]
-        self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
+        self.tetrominos = [tetromino_old.Straight(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.RCorner(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.LCorner(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.Square(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.SnakeR(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.SnakeL(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.T(self.feature_type, self.num_features, self.num_columns)]
+        self.tetromino_sampler = tetromino_old.TetrominoSampler(self.tetrominos)
 
         # Experience replay
         self.mlogit_learning = mlogit_learning

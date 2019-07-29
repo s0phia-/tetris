@@ -4,7 +4,7 @@ import stew
 from stew.utils import create_ridge_matrix, create_diff_matrix, create_stnw_matrix
 import domtools
 
-from tetris import mcts, tetromino, game
+from tetris import mcts, tetromino_old, game
 from tetris.utils import plot_analysis, plot_individual_agent, vert_one_hot
 from numba import njit
 from scipy.stats import binom_test
@@ -68,14 +68,14 @@ class HierarchicalLearner:
         self.verbose = verbose
         self.verbose_stew = verbose_stew
         self.max_choice_set_size = 35
-        self.tetrominos = [tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.Square(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.SnakeR(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.SnakeL(self.feature_type, self.num_features, self.num_columns),
-                           tetromino.T(self.feature_type, self.num_features, self.num_columns)]
-        self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
+        self.tetrominos = [tetromino_old.Straight(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.RCorner(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.LCorner(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.Square(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.SnakeR(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.SnakeL(self.feature_type, self.num_features, self.num_columns),
+                           tetromino_old.T(self.feature_type, self.num_features, self.num_columns)]
+        self.tetromino_sampler = tetromino_old.TetrominoSampler(self.tetrominos)
         self.positive_direction_counts = np.zeros(self.num_features)
         self.meaningful_comparisons = np.zeros(self.num_features)
         self.learned_directions = np.zeros(self.num_features)

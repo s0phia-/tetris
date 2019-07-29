@@ -1,14 +1,7 @@
 import numpy as np
-from tetris import state, tetromino, tetromino_one_class
+from tetris import state, tetromino_old, tetromino
 import numba
 from numba import njit, jitclass, float64, int64, bool_, int64
-import pprint
-import collections
-import time
-import copy
-
-from IPython.display import clear_output
-import time
 
 
 specTetris = [
@@ -21,7 +14,7 @@ specTetris = [
     ('max_cleared_test_lines', int64),
     ('game_over', bool_),
     ('current_state', state.State.class_type.instance_type),
-    ('tetromino_handler', tetromino_one_class.Tetromino.class_type.instance_type),
+    ('tetromino_handler', tetromino.Tetromino.class_type.instance_type),
     ('cleared_lines', int64),
     ('cumulative_steps', int64)
 ]
@@ -42,10 +35,11 @@ class Tetris:
     def __init__(self,
                  num_columns,
                  num_rows,
+                 max_cleared_test_lines=100000000000,
                  tetromino_size=4,
                  feature_type="bcts",
-                 num_features=8,
-                 max_cleared_test_lines=100000000000):
+                 num_features=8
+                 ):
         """
         
         :param num_columns: 
@@ -73,17 +67,7 @@ class Tetris:
                                          "bcts",  # feature_type=
                                          False  # terminal_state=
                                          )
-        # self.tetrominos = [
-        #     tetromino.Straight(self.feature_type, self.num_features, self.num_columns),
-        #     tetromino.RCorner(self.feature_type, self.num_features, self.num_columns),
-        #     tetromino.LCorner(self.feature_type, self.num_features, self.num_columns),
-        #     tetromino.Square(self.feature_type, self.num_features, self.num_columns),
-        #     tetromino.SnakeR(self.feature_type, self.num_features, self.num_columns),
-        #     tetromino.SnakeL(self.feature_type, self.num_features, self.num_columns),
-        #     tetromino.T(self.feature_type, self.num_features, self.num_columns)]
-        #
-        # self.tetromino_sampler = tetromino.TetrominoSamplerRandom(self.tetrominos)
-        self.tetromino_handler = tetromino_one_class.Tetromino(self.feature_type, self.num_features, self.num_columns)
+        self.tetromino_handler = tetromino.Tetromino(self.feature_type, self.num_features, self.num_columns)
         self.cleared_lines = 0
         self.cumulative_steps = 0
 
@@ -98,43 +82,39 @@ class Tetris:
                                          "bcts",  # feature_type=
                                          False  # terminal_state=
                                          )
-                                         # col_transitions_per_col=np.zeros(self.num_columns, dtype=np.int64),
-                                         # row_transitions_per_col=np.zeros(self.num_columns + 1, dtype=np.int64),
-                                         # array_of_rows_with_holes=np.array([100], dtype=np.int64),
-                                         # holes_per_col=np.zeros(self.num_columns, dtype=np.int64),
-                                         # hole_depths_per_col=np.zeros(self.num_columns, dtype=np.int64),
-                                         # cumulative_wells_per_col=np.zeros(self.num_columns, dtype=np.int64))
         self.current_state.calc_bcts_features()
         self.cleared_lines = 0
+        self.tetromino_handler.next_tetromino()
 
     # def is_game_over(self):
     #     if np.any(self.current_state.representation[self.num_rows]):
     #         self.game_over = True
 
     def make_step(self, after_state):
+        self.cumulative_steps += 1
         self.game_over = after_state.terminal_state
         if not self.game_over:
             self.cleared_lines += after_state.n_cleared_lines
             self.current_state = after_state
             self.tetromino_handler.next_tetromino()
 
-    def evaluate(self, agent):  # visualize=False, clear_the_output=False, sleep=0
-        self.reset()
-        # _ = env.print_board_to_string(env.current_state, clear_the_output, sleep)
-        while not self.game_over and self.cleared_lines <= self.max_cleared_test_lines:
-            # current_tetromino = env.tetromino_sampler.next_tetromino()
-            # env.current_tetromino
-            # print(current_tetromino)
-            # env.tetromino_handler.next_tetromino()
-            # print(env.tetromino_handler.current_tetromino)
-            after_state = agent.choose_action_test(start_state=self.current_state, start_tetromino=self.tetromino_handler)
-            self.make_step(after_state)
-            # if visualize and not self.current_state.terminal_state:
-            #     self.print_board_to_string(self.current_state, clear_the_output, sleep)
-        # print(env.cleared_lines)
-        return self.cleared_lines
-    # def print_board(self, clear_the_output=True):
-    #     self.current_state.print_board(clear_the_output=clear_the_output)
+    # def evaluate(self, agent):  # visualize=False, clear_the_output=False, sleep=0
+    #     self.reset()
+    #     # _ = env.print_board_to_string(env.current_state, clear_the_output, sleep)
+    #     while not self.game_over and self.cleared_lines <= self.max_cleared_test_lines:
+    #         # current_tetromino = env.tetromino_sampler.next_tetromino()
+    #         # env.current_tetromino
+    #         # print(current_tetromino)
+    #         # env.tetromino_handler.next_tetromino()
+    #         # print(env.tetromino_handler.current_tetromino)
+    #         after_state = agent.choose_action_test(start_state=self.current_state, start_tetromino=self.tetromino_handler)
+    #         self.make_step(after_state)
+    #         # if visualize and not self.current_state.terminal_state:
+    #         #     self.print_board_to_string(self.current_state, clear_the_output, sleep)
+    #     # print(env.cleared_lines)
+    #     return self.cleared_lines
+    # # def print_board(self, clear_the_output=True):
+    # #     self.current_state.print_board(clear_the_output=clear_the_output)
 
     # def print_board(self, stateX, clear_the_output=False):
     #     if clear_the_output:

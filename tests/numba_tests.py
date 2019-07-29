@@ -10,6 +10,20 @@ changed_lines = np.array([1, 2], dtype=np.int64)
 lowest_free_rows = np.zeros(10, dtype=np.int64)
 num_columns = np.int64(10)
 
+
+"""
+Advanced list indexing
+"""
+
+@njit
+def with_integers():
+    l = [1, 2, 3]
+
+    return l[np.array([True, False, True])]
+
+with_integers()
+
+
 """
 update bool with 1s
 
