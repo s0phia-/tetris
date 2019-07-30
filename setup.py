@@ -7,5 +7,5 @@ setup(name='tetris',
       author='Jan Malte Lichtenberg',
       author_email='j.m.lichtenberg@bath.ac.uk',
       license='MIT',
-      packages=['tetris'],
+      packages=['tetris', 'agents', 'run'],
       zip_safe=False)
