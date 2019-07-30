@@ -687,7 +687,7 @@ class LCorner:
         return after_states
 
 #
-# @njit(cache=True)
+# @njit(cache=False)
 # def numba_any(arr):
 #     found = False
 #     i = 0

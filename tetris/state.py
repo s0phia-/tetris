@@ -31,18 +31,8 @@ spec = [
     ('features_are_calculated', bool_),
     ('features', float64[:]),
     ('terminal_state', bool_)
-    # ('value_estimate', float64)
-    # ('reward', int64),
-    # ('value_estimate', float64),
-    # ('col_transitions_per_col', int64[:]),
-    # ('row_transitions_per_col', int64[:]),
-    # ('holes_per_col', int64[:]),
-    # ('hole_depths_per_col', int64[:]),
-    # ('cumulative_wells_per_col', int64[:]),
-    # ('array_of_rows_with_holes', int64[:])
 ]
 
-# FOR SET: numba.types.containers.Set
 
 @jitclass(spec)
 class State(object):
@@ -81,22 +71,6 @@ class State(object):
             self.features = np.zeros(self.num_features, dtype=np.float64)
             # self.value_estimate = 0.0
 
-        # self.reward = 0 if self.terminal_state else self.n_cleared_lines
-        # self.value_estimate = 0.0
-        # self.anchor_col = changed_cols[0]
-        # self.col_transitions_per_col = col_transitions_per_col.copy()
-        # self.row_transitions_per_col = row_transitions_per_col.copy()
-        # self.array_of_rows_with_holes = array_of_rows_with_holes.copy()
-        # self.holes_per_col = holes_per_col.copy()
-        # self.hole_depths_per_col = hole_depths_per_col.copy()
-        # self.cumulative_wells_per_col = cumulative_wells_per_col.copy()
-
-        # self.col_transitions_per_col = np.zeros(self.num_columns, dtype=np.int64)
-        # self.row_transitions_per_col = np.zeros(self.num_columns+1, dtype=np.int64)
-        # self.array_of_rows_with_holes = np.array([100], dtype=np.int64)
-        # self.holes_per_col = np.zeros(self.num_columns, dtype=np.int64)
-        # self.hole_depths_per_col = np.zeros(self.num_columns, dtype=np.int64)
-        # self.cumulative_wells_per_col = np.zeros(self.num_columns, dtype=np.int64)
 
     # def __repr__(self):
     #     return self.print_board_to_string()
@@ -149,12 +123,6 @@ class State(object):
     #     if self.features is None:
     #         self.calc_feature_values()
     #     return np.insert(self.features, obj=0, values=1.)
-
-    # def clear_lines(self, changed_lines):
-    #     is_full, self.n_cleared_lines, self.representation, self.lowest_free_rows = \
-    #         clear_lines_jitted(changed_lines, self.representation,
-    #                            self.lowest_free_rows, self.num_columns)
-    #     return is_full
 
     def clear_lines(self, changed_lines):
         num_columns = self.num_columns
@@ -420,6 +388,21 @@ class State(object):
         self.features = np.array([rows_with_holes, col_transitions, holes, landing_height,
                                   cumulative_wells, row_transitions, eroded_piece_cells, hole_depths])
 
+
+
+@njit(fastmath=True, cache=False)
+def numba_sum_int(int_arr):
+    acc = 0
+    for i in int_arr:
+        acc += i
+    return acc
+
+@njit(fastmath=True, cache=False)
+def numba_sum(arr):
+    acc = 0.
+    for i in arr:
+        acc += i
+    return acc
 
     # def update_bcts_features(self):
     #     # Can only add holes... not remove them
@@ -941,22 +924,6 @@ class State(object):
 #     return is_full, n_cleared_lines, representation, lowest_free_rows
 #
 
-@njit(fastmath=True, cache=False)
-def numba_sum_int(int_arr):
-    acc = 0
-    for i in int_arr:
-        acc += i
-    return acc
-
-
-@njit(fastmath=True, cache=False)
-def numba_sum(arr):
-    acc = 0.
-    for i in arr:
-        acc += i
-    return acc
-
-
 # @njit(fastmath=True, cache=False)
 # def minmaxavg_jitted(x):
 #     maximum = x[0]
@@ -973,7 +940,7 @@ def numba_sum(arr):
 #
 
 
-# @njit(fastmath=True, cache=True)
+# @njit(fastmath=True, cache=False)
 # def calc_lowest_free_rows(rep):
 #     num_rows, n_cols = rep.shape
 #     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)

@@ -5,6 +5,7 @@ from stew import StewMultinomialLogit, ChoiceSetData
 from stew.utils import create_diff_matrix, create_ridge_matrix
 from tetris.state import State
 from numba import njit
+import time
 
 
 class MLearning:
@@ -80,6 +81,7 @@ class MLearning:
         self.learn_periodicity = learn_periodicity
         self.learn_every_step_until = learn_every_step_until
         self.max_batch_size = max_batch_size
+        self.step_since_last = 0
 
     # def reset_agent(self):
     #     self.step = 0
@@ -101,31 +103,18 @@ class MLearning:
         """
         delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or (self.delete_every > 0 and self.step % self.delete_every == 0 and self.step >= self.learn_from_step + 1)
         self.mlogit_data.push(features=action_features, choice_index=action_index, delete_oldest=delete_oldest)
-        if self.step >= self.learn_from_step and (self.step <= self.learn_every_step_until or self.step % self.learn_periodicity == self.learn_periodicity - 1):
+        self.step_since_last += 1
+        if self.step >= self.learn_from_step and (self.step <= self.learn_every_step_until or self.step_since_last == self.learn_periodicity):
+            self.learn_periodicity += 1
+            print("self.learn_periodicity", self.learn_periodicity)
+            print("Started learning")
+            learning_time_start = time.time()
             if self.regularization in ["ols", "nonnegative"]:
                 self.policy_weights = self.model.fit(data=self.mlogit_data.sample(), lam=0, standardize=False)
             elif self.regularization in ["ridge", "stew"]:
                 self.policy_weights, _ = self.model.cv_fit(data=self.mlogit_data.sample())
-
-    # def choose_action_test(self, start_state, start_tetromino):
-    #     """
-    #     Chooses actions in test mode, that is, without rollouts and without dominance filtering.
-    #     Chooses the utility-maximising action.
-    #     """
-    #     all_available_after_states = start_tetromino.get_after_states(current_state=start_state)
-    #     available_after_states = np.array([child for child in all_available_after_states if not child.terminal_state])
-    #     if len(available_after_states) == 0:
-    #         # Game over!
-    #         return all_available_after_states[0], 0
-    #     num_states = len(available_after_states)
-    #     action_features = np.zeros((num_states, self.num_features))
-    #     for ix, after_state in enumerate(available_after_states):
-    #         action_features[ix] = after_state.get_features(direct_by=self.feature_directors, order_by=self.feature_order)
-    #     utilities = action_features.dot(self.policy_weights)
-    #     max_indices = np.where(utilities == np.max(utilities))[0]
-    #     move_index = np.random.choice(max_indices)
-    #     move = available_after_states[move_index]
-    #     return move, move_index
+            print("Learning took: " + str(time.time() - learning_time_start) + " seconds.")
+            self.step_since_last = 0
 
 
 @njit(cache=False)

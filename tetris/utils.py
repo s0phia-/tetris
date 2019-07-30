@@ -24,21 +24,21 @@ class Bunch(object):
         self.__dict__.update(adict)
 
 
-@njit
+@njit(cache=False)
 def one_hot_vector(one_index, length):
     out = np.zeros(length)
     out[one_index] = 1.
     return out
 
 
-@njit
+@njit(cache=False)
 def vert_one_hot(one_index, length):
     out = np.zeros((length, 1))
     out[one_index] = 1.
     return out
 
 
-@njit
+@njit(cache=False)
 def compute_action_probabilities(action_features, weights, temperature):
     utilities = action_features.dot(weights) / temperature
     utilities = utilities - np.max(utilities)
@@ -47,14 +47,14 @@ def compute_action_probabilities(action_features, weights, temperature):
     return probabilities
 
 
-@njit
+@njit(cache=False)
 def grad_of_log_action_probabilities(features, probabilities, action_index):
     features_of_chosen_action = features[action_index]
     grad = features_of_chosen_action - features.T.dot(probabilities)
     return grad
 
 
-@njit
+@njit(cache=False)
 def softmax(U):
     ps = np.exp(U - np.max(U))
     ps /= np.sum(ps)

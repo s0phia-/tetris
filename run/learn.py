@@ -51,7 +51,7 @@ def learn_and_evaluate(env,
                 print("TESTING: ", test_index + 1, " out of ", num_tests, " tests.")
                 test_results[test_index, :] = evaluate(test_env, test_agent, num_test_games)
                 print("Mean: ", np.mean(test_results[test_index, :]), ", Median: ", np.median(test_results[test_index, :]))
-                print("Choosing an action took: " + str(time.time() - testing_time_start) + " seconds.")
+                print("Testing took: " + str(time.time() - testing_time_start) + " seconds.")
                 test_index += 1
                 # testing_time += time.time() - testing_time_start
 
@@ -66,18 +66,18 @@ def learn_and_evaluate(env,
             after_state, action_index, action_features = agent.choose_action(start_state=env.current_state,
                                                                              start_tetromino=env.tetromino_handler)
 
-            print("Choosing an action took: " + str(time.time() - choosing_action_time_start) + " seconds.")
+            # print("Choosing an action took: " + str(time.time() - choosing_action_time_start) + " seconds.")
             print("CURRENT STEP: " + str(env.cumulative_steps))
             env.make_step(after_state)
 
             # LEARN
             if agent.is_learning and not env.game_over:
-                print("Started learning")
-                learning_time_start = time.time()
+                # print("Started learning")
+                # learning_time_start = time.time()
                 agent.learn(action_features=action_features, action_index=action_index)
-                print("Learning took: " + str(time.time()-learning_time_start) + " seconds.")
-                print("self.agent.mlogit_data.choice_set_counter: " + str(agent.mlogit_data.choice_set_counter))
-                print("self.agent.mlogit_data.current_number_of_choice_sets: " + str(agent.mlogit_data.current_number_of_choice_sets))
+
+                # print("self.agent.mlogit_data.choice_set_counter: " + str(agent.mlogit_data.choice_set_counter))
+                # print("self.agent.mlogit_data.current_number_of_choice_sets: " + str(agent.mlogit_data.current_number_of_choice_sets))
             agent.step += 1
 
         return test_results, tested_weights # , weights_storage

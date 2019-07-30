@@ -1,7 +1,8 @@
 .DS_Store
 .idea/
 archive/
-experiments/
+run_experiments/
+*/experiments/
 *t2019_*
 
 # Byte-compiled / optimized / DLL files
