@@ -2,8 +2,9 @@ import os
 import json
 from tetris.utils import Bunch
 
+
 def create_directories(run_id):
-    run_id_path = os.path.join("experiments", run_id)
+    run_id_path = os.path.join("output", run_id)
     if not os.path.exists(run_id_path):
         os.makedirs(run_id_path)
     # model_save_name = os.path.join(dir_path, "model.pt")
