@@ -1,7 +1,7 @@
 import numpy as np
-from tetris import state, tetromino_old, tetromino
+from tetris import state, tetromino  # tetromino_old,
 import numba
-from numba import njit, jitclass, float64, int64, bool_, int64
+from numba import jitclass, bool_, int64
 
 
 specTetris = [
