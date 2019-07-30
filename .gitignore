@@ -2,7 +2,7 @@
 .idea/
 archive/
 run_experiments/
-*/experiments/
+*experiments/
 *t2019_*
 
 # Byte-compiled / optimized / DLL files

@@ -1,18 +1,12 @@
 import tetris
 from agents.constant_agent import ConstantAgent
-# from run.evaluate import evaluate
 import numpy as np
 import time
 from datetime import datetime
 from numba import njit
 
-# time_id = datetime.now().strftime('%Y_%m_%d_%H_%M')
-# np.random.seed(1)
-
-# import numba.config as c
-# print("NUMBA_DISABLE_JIT:", c.DISABLE_JIT)
-# c.DISABLE_JIT = 0
-# # print("NUMBA_DISABLE_JIT:", c.DISABLE_JIT)
+time_id = datetime.now().strftime('%Y_%m_%d_%H_%M')
+np.random.seed(1)
 
 
 @njit
@@ -29,27 +23,27 @@ def evaluate(env, agent, num_runs):
         rewards[i] = env.cleared_lines
     return rewards
 
-start = time.time()
-num_runs = 50
 
-print("RANDOM")
+num_runs = 50
+start = time.time()
+
+print("RANDOM policy")
 random_rewards = np.zeros(10)
 env = tetris.Tetris(num_columns=10, num_rows=10)
 agent = ConstantAgent(policy_weights=np.random.normal(0, 1, 8))
 random_rewards = evaluate(env, agent, num_runs, visualize=False, clear_the_output=False, sleep=0)
 
-
-print("EW")
+print("Equal weights policy")
 agent = ConstantAgent(policy_weights=np.ones(8, dtype=np.float64))
 ew_rewards = evaluate(env, agent, num_runs, visualize=False, clear_the_output=False, sleep=0)
 
 
-print("TTB")
+print("Canonical non-compensatory weighting (i.e., 1/2, 1/4, 1/8, 1/16, 1/32, ...)")
 agent = ConstantAgent(policy_weights=0.5**np.arange(8))
 ttb_rewards = evaluate(env, agent, num_runs, visualize=False, clear_the_output=False, sleep=0)
 
 end = time.time()
-print("Took ", end - start, " seconds.")
+print("All together took ", end - start, " seconds.")
 
 with open("t" + time_id + ".txt", "w") as text_file:
     print("Started at: " + time_id, file=text_file)  # + " from file " + str(__file__)

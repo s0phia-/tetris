@@ -47,7 +47,7 @@ class HierarchicalLearner:
                  dom_filter_phases, cumu_dom_filter_phases, rollout_dom_filter_phases,
                  rollout_cumu_dom_filter_phases, filter_best_phases, ols_phases,
                  max_length_phases, gamma_phases, rollout_length_phases, rollout_action_selection_phases,
-                 delete_every_phases, learn_from_step_phases, learn_every_step_until, avg_expands_per_children_phases, feature_directors,
+                 delete_oldest_data_point_every_phases, learn_from_step_phases, learn_every_step_until, number_of_rollouts_per_child_phases, feature_directors,
                  standardize_features, max_batch_size, learn_every_after, ew=False, ttb=False,
                  random_init_weights=False, do_sgd_update=False, ridge=False, one_se_rule=False, stnw=False,
                  nonnegative=False):
@@ -94,9 +94,9 @@ class HierarchicalLearner:
         self.rollout_cumu_dom_filter_phases = rollout_cumu_dom_filter_phases
         self.filter_best_phases = filter_best_phases
         self.ols_phases = ols_phases
-        self.delete_every_phases = delete_every_phases
+        self.delete_oldest_data_point_every_phases = delete_oldest_data_point_every_phases
         self.learn_from_step_phases = learn_from_step_phases
-        self.avg_expands_per_children_phases = avg_expands_per_children_phases
+        self.number_of_rollouts_per_child_phases = number_of_rollouts_per_child_phases
 
         # Phase init
         self.phase_names = ["learn_directions", "learn_order", "learn_weights", "optimize_weights"]
@@ -116,10 +116,10 @@ class HierarchicalLearner:
         self.rollout_cumu_dom_filter = self.rollout_cumu_dom_filter_phases[self.phase_ix]
         self.filter_best = self.filter_best_phases[self.phase_ix]
         self.ols = self.ols_phases[self.phase_ix]
-        self.delete_every = self.delete_every_phases[self.phase_ix]
+        self.delete_oldest_data_point_every = self.delete_oldest_data_point_every_phases[self.phase_ix]
         self.learn_from_step = self.learn_from_step_phases[self.phase_ix]
-        self.avg_expands_per_children = self.avg_expands_per_children_phases[self.phase_ix]
-        self.num_total_rollouts = self.rollout_length * self.avg_expands_per_children
+        self.number_of_rollouts_per_child = self.number_of_rollouts_per_child_phases[self.phase_ix]
+        self.num_total_rollouts = self.rollout_length * self.number_of_rollouts_per_child
         self.learn_every_after = learn_every_after
         self.learn_every_step_until = learn_every_step_until
 
@@ -174,7 +174,7 @@ class HierarchicalLearner:
     def create_rollout_tetrominos(self):
         # TODO: create functionality that makes sure that every tetromino is used at least once in the first row.
         self.rollout_tetrominos = np.array([self.tetromino_sampler.next_tetromino() for _ in range(self.num_total_rollouts)])
-        self.rollout_tetrominos.shape = (self.rollout_length, self.avg_expands_per_children)
+        self.rollout_tetrominos.shape = (self.rollout_length, self.number_of_rollouts_per_child)
 
     def choose_action(self, start_state, start_tetromino):
         all_children_states = start_tetromino.get_after_states(current_state=start_state)
@@ -205,7 +205,7 @@ class HierarchicalLearner:
         child_total_values = np.zeros(num_children)
         self.create_rollout_tetrominos()
         for child in range(num_children):
-            for rollout_ix in range(self.avg_expands_per_children):
+            for rollout_ix in range(self.number_of_rollouts_per_child):
                 child_total_values[child] += self.roll_out(start_state=children_states[child], rollout_ix=rollout_ix)
         child_index = np.argmax(child_total_values)
         # if self.verbose:
@@ -285,7 +285,7 @@ class HierarchicalLearner:
                 data = np.hstack((choice_set_index, one_hot_choice, action_features))
                 self.policy_weights = self.model.sgd_update(weights=self.policy_weights, data=data)
             else:
-                delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or (self.delete_every > 0 and self.step_in_new_phase % self.delete_every == 0 and self.step_in_new_phase >= self.learn_from_step + 1)
+                delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or (self.delete_oldest_data_point_every > 0 and self.step_in_new_phase % self.delete_oldest_data_point_every == 0 and self.step_in_new_phase >= self.learn_from_step + 1)
                 self.mlogit_data.push(features=action_features, choice_index=action_index, delete_oldest=delete_oldest)
                 if self.step_in_new_phase >= self.learn_from_step and (self.step_in_new_phase <= self.learn_every_step_until or self.step_in_new_phase % self.learn_every_after == self.learn_every_after-1):
                     if self.ols or self.nonnegative:
@@ -368,10 +368,10 @@ class HierarchicalLearner:
         self.rollout_cumu_dom_filter = self.rollout_cumu_dom_filter_phases[self.phase_ix]
         self.filter_best = self.filter_best_phases[self.phase_ix]
         self.ols = self.ols_phases[self.phase_ix]
-        self.delete_every = self.delete_every_phases[self.phase_ix]
+        self.delete_oldest_data_point_every = self.delete_oldest_data_point_every_phases[self.phase_ix]
         self.learn_from_step = self.learn_from_step_phases[self.phase_ix]
-        self.avg_expands_per_children = self.avg_expands_per_children_phases[self.phase_ix]
-        self.num_total_rollouts = self.rollout_length * self.avg_expands_per_children
+        self.number_of_rollouts_per_child = self.number_of_rollouts_per_child_phases[self.phase_ix]
+        self.num_total_rollouts = self.rollout_length * self.number_of_rollouts_per_child
 
         if self.phase == "learn_order":  # coming from "learn_directions"
             print("The learned directions are: ", self.learned_directions)
@@ -470,8 +470,8 @@ class MlogitData(object):
 #                                  num_columns=p.num_columns,
 #                                  verbose=p.verbose, verbose_stew=p.verbose_stew,
 #                                  learn_from_step_phases=p.learn_from_step_phases,
-#                                  avg_expands_per_children_phases=p.avg_expands_per_children_phases,
-#                                  delete_every_phases=p.delete_every_phases,
+#                                  number_of_rollouts_per_child_phases=p.number_of_rollouts_per_child_phases,
+#                                  delete_oldest_data_point_every_phases=p.delete_oldest_data_point_every_phases,
 #                                  lambda_min=p.lambda_min, lambda_max=p.lambda_max,
 #                                  num_lambdas=p.num_lambdas,
 #                                  gamma_phases=p.gamma_phases,

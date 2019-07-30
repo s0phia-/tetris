@@ -23,7 +23,7 @@ class MLearning:
                  num_lambdas,
                  gamma,
                  rollout_length,
-                 avg_expands_per_children,
+                 number_of_rollouts_per_child,
                  learn_every_step_until,
                  max_batch_size,
                  learn_periodicity,
@@ -49,8 +49,8 @@ class MLearning:
         # Algo params
         self.gamma = gamma
         self.rollout_length = rollout_length
-        self.avg_expands_per_children = avg_expands_per_children
-        self.num_total_rollouts = self.rollout_length * self.avg_expands_per_children
+        self.number_of_rollouts_per_child = number_of_rollouts_per_child
+        self.num_total_rollouts = self.rollout_length * self.number_of_rollouts_per_child
         self.dom_filter = dominance_filter
         self.cumu_dom_filter = cumu_dom_filter
         self.rollout_dom_filter = rollout_dom_filter
@@ -76,7 +76,7 @@ class MLearning:
         self.mlogit_data = ChoiceSetData(num_features=self.num_features, max_choice_set_size=self.max_choice_set_size)
 
         # Algo batch size handling
-        self.delete_every = 2
+        self.delete_oldest_data_point_every = 2
         self.learn_from_step = learn_from_step
         self.learn_periodicity = learn_periodicity
         self.learn_every_step_until = learn_every_step_until
@@ -88,20 +88,20 @@ class MLearning:
 
     # def create_rollout_tetrominos(self):
     #     self.rollout_tetrominos = np.array([self.tetromino_sampler.next_tetromino() for _ in range(self.num_total_rollouts)])
-    #     self.rollout_tetrominos.shape = (self.rollout_length, self.avg_expands_per_children)
+    #     self.rollout_tetrominos.shape = (self.rollout_length, self.number_of_rollouts_per_child)
 
     def choose_action(self, start_state, start_tetromino):
         return choose_action_using_rollouts(start_state, start_tetromino,
                                             self.rollout_length, self.tetromino_handler, self.policy_weights,
                                             self.dom_filter, self.cumu_dom_filter, self.rollout_dom_filter, self.rollout_cumu_dom_filter,
                                             self.feature_directors, self.num_features, self.gamma,
-                                            self.avg_expands_per_children)
+                                            self.number_of_rollouts_per_child)
 
     def learn(self, action_features, action_index):
         """
         Learns new policy weights from choice set data.
         """
-        delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or (self.delete_every > 0 and self.step % self.delete_every == 0 and self.step >= self.learn_from_step + 1)
+        delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or (self.delete_oldest_data_point_every > 0 and self.step % self.delete_oldest_data_point_every == 0 and self.step >= self.learn_from_step + 1)
         self.mlogit_data.push(features=action_features, choice_index=action_index, delete_oldest=delete_oldest)
         self.step_since_last += 1
         if self.step >= self.learn_from_step and (self.step <= self.learn_every_step_until or self.step_since_last == self.learn_periodicity):
@@ -122,7 +122,7 @@ def choose_action_using_rollouts(start_state, start_tetromino,
                                  rollout_length, tetromino_handler, policy_weights,
                                  dominance_filter, cumu_dom_filter, rollout_dom_filter, rollout_cumu_dom_filter,
                                  feature_directors, num_features, gamma,
-                                 avg_expands_per_children):
+                                 number_of_rollouts_per_child):
     children_states = start_tetromino.get_after_states(start_state)
     num_children = len(children_states)
     if num_children == 0:
@@ -150,7 +150,7 @@ def choose_action_using_rollouts(start_state, start_tetromino,
     for child in range(num_children):
         # TODO: ONLY WORKS WITH cumu_dom_filter ON
         if not_cumu_dominated[child]:
-            for rollout_ix in range(avg_expands_per_children):
+            for rollout_ix in range(number_of_rollouts_per_child):
                 child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler, policy_weights,
                                                       rollout_dom_filter, rollout_cumu_dom_filter,
                                                       feature_directors, num_features, gamma)

@@ -12,7 +12,7 @@ from statsmodels.stats.proportion import proportions_ztest
 class RolloutActorCritic:
     # No bootstrapping
     def __init__(self, rollout_length, temperature, filter_in_rollout, num_features, feature_type, policy_lambda, policy_alpha, gamma,
-                 avg_expands_per_children, ucb_sampling, num_columns, cp, dom_filter, cumu_dom_filter, add_reward, target_update,
+                 number_of_rollouts_per_child, ucb_sampling, num_columns, cp, dom_filter, cumu_dom_filter, add_reward, target_update,
                  mlogit_learning, max_sample_size, mlogit_data, memory_size, learn_from_step,
                  lambda_min=-8.0, lambda_max=4.0, num_lambdas=50, verbose=False):
         self.num_features = num_features
@@ -37,7 +37,7 @@ class RolloutActorCritic:
         self.policy_weights *= np.sign(self.policy_weights)
         self.step = 0
         self.max_choice_set_size = 35
-        self.delete_every = 2
+        self.delete_oldest_data_point_every = 2
         # self.action_selection_method = "rollout_with_prob"
         self.action_selection_method = "rollout"
         # TODO: add directions
@@ -47,7 +47,7 @@ class RolloutActorCritic:
         self.policy_alpha = policy_alpha
         self.policy_eligibility_trace = np.zeros(self.num_features)
         self.add_reward = add_reward
-        self.avg_expands_per_children = avg_expands_per_children
+        self.number_of_rollouts_per_child = number_of_rollouts_per_child
         self.num_columns = num_columns
         self.cp = cp
         self.dom_filter = dom_filter
@@ -100,7 +100,7 @@ class RolloutActorCritic:
             map_back_vector = root.filter()
             num_children_filtered = root.num_children
             # if num_children_filtered > 1:
-            num_expands_tmp = num_children_filtered * self.avg_expands_per_children
+            num_expands_tmp = num_children_filtered * self.number_of_rollouts_per_child
             for _ in range(num_expands_tmp):
                 leaf = root.best_child()
                 value_estimate = self.roll_out(leaf.state)
@@ -144,9 +144,9 @@ class RolloutActorCritic:
                 child_total_values = child_total_values[not_simply_dominated]
                 map_back_vector = np.nonzero(not_simply_dominated)[0]
             num_children_filtered = len(children_states)
-            # num_expands_tmp = num_children_filtered * self.avg_expands_per_children
+            # num_expands_tmp = num_children_filtered * self.number_of_rollouts_per_child
             for child in range(num_children_filtered):
-                for rollout in range(self.avg_expands_per_children):
+                for rollout in range(self.number_of_rollouts_per_child):
                     child_total_values[child] += self.roll_out(children_states[child])
             child_index = np.argmax(child_total_values)
             children_states[child_index].value_estimate = child_total_values[child_index]
@@ -172,7 +172,7 @@ class RolloutActorCritic:
             num_children_filtered = len(children_states)
             child_total_values = np.zeros(num_children_filtered)
             for child in range(num_children_filtered):
-                for rollout in range(self.avg_expands_per_children):
+                for rollout in range(self.number_of_rollouts_per_child):
                     child_total_values[child] += self.roll_out(children_states[child])
             child_index = np.argmax(child_total_values)
             children_states[child_index].value_estimate = child_total_values[child_index]
@@ -251,7 +251,7 @@ class RolloutActorCritic:
 
     def learn(self, action_features, action_index):
         if self.mlogit_learning:
-            # delete_oldest = self.step >= self.memory_size and self.step % self.delete_every == 0
+            # delete_oldest = self.step >= self.memory_size and self.step % self.delete_oldest_data_point_every == 0
             delete_oldest = False
             self.mlogit_data.push(features=action_features, choice_index=action_index, delete_oldest=delete_oldest)
             if self.step >= self.learn_from_step:
