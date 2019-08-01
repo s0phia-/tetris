@@ -4,6 +4,7 @@ archive/
 run_experiments/
 *experiments/
 *t2019_*
+output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
