@@ -27,6 +27,7 @@ class MLearning:
                  learn_every_step_until,
                  max_batch_size,
                  learn_periodicity,
+                 increase_learn_periodicity,
                  learn_from_step,
                  num_columns,
                  feature_directors=np.array([-1, -1, -1, -1, -1, -1, 1, -1]),
@@ -79,6 +80,7 @@ class MLearning:
         self.delete_oldest_data_point_every = 2
         self.learn_from_step = learn_from_step
         self.learn_periodicity = learn_periodicity
+        self.increase_learn_periodicity = increase_learn_periodicity
         self.learn_every_step_until = learn_every_step_until
         self.max_batch_size = max_batch_size
         self.step_since_last = 0
@@ -101,11 +103,11 @@ class MLearning:
         """
         Learns new policy weights from choice set data.
         """
-        delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or (self.delete_oldest_data_point_every > 0 and self.step % self.delete_oldest_data_point_every == 0 and self.step >= self.learn_from_step + 1)
+        delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or (self.delete_oldest_data_point_every > 0 and self.step % self.delete_oldest_data_point_every == 0 and self.step > self.learn_from_step)
         self.mlogit_data.push(features=action_features, choice_index=action_index, delete_oldest=delete_oldest)
         self.step_since_last += 1
         if self.step >= self.learn_from_step and (self.step <= self.learn_every_step_until or self.step_since_last == self.learn_periodicity):
-            self.learn_periodicity += 1
+            self.learn_periodicity += self.increase_learn_periodicity
             print("self.learn_periodicity", self.learn_periodicity)
             print("Started learning")
             learning_time_start = time.time()
