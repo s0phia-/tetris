@@ -65,15 +65,15 @@ class MLearning:
 
         # Data and model (regularization type)
         self.regularization = regularization
-        assert(self.regularization in ["stew", "ols", "ridge", "nonnegative", "ew", "ttb"])
-        self.is_learning = self.regularization in ["stew", "ridge", "ols", "nonnegative"]
+        assert(self.regularization in ["stew", "no_regularization", "ridge", "nonnegative", "ew", "ttb"])
+        self.is_learning = self.regularization in ["stew", "ridge", "no_regularization", "nonnegative"]
         if self.regularization == "ridge":
             D = create_ridge_matrix(self.num_features)
         else:
             D = create_diff_matrix(self.num_features)
         self.model = StewMultinomialLogit(num_features=self.num_features, D=D, lambda_min=lambda_min,
                                           lambda_max=lambda_max, num_lambdas=num_lambdas, verbose=self.verbose_stew,
-                                          nonnegative=self.regularization=="nonnegative")
+                                          nonnegative=self.regularization == "nonnegative")
         self.mlogit_data = ChoiceSetData(num_features=self.num_features, max_choice_set_size=self.max_choice_set_size)
 
         # Algo batch size handling
@@ -106,12 +106,12 @@ class MLearning:
         delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or (self.delete_oldest_data_point_every > 0 and self.step % self.delete_oldest_data_point_every == 0 and self.step > self.learn_from_step)
         self.mlogit_data.push(features=action_features, choice_index=action_index, delete_oldest=delete_oldest)
         self.step_since_last += 1
-        if self.step >= self.learn_from_step and (self.step <= self.learn_every_step_until or self.step_since_last == self.learn_periodicity):
+        if self.step >= self.learn_from_step and (self.step <= self.learn_every_step_until or self.step_since_last >= self.learn_periodicity):
             self.learn_periodicity += self.increase_learn_periodicity
             print("self.learn_periodicity", self.learn_periodicity)
             print("Started learning")
             learning_time_start = time.time()
-            if self.regularization in ["ols", "nonnegative"]:
+            if self.regularization in ["no_regularization", "nonnegative"]:
                 self.policy_weights = self.model.fit(data=self.mlogit_data.sample(), lam=0, standardize=False)
             elif self.regularization in ["ridge", "stew"]:
                 self.policy_weights, _ = self.model.cv_fit(data=self.mlogit_data.sample())

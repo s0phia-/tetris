@@ -85,7 +85,7 @@ def plot_learning_curve(plots_path, test_results, x_axis):
     plt.close()
 
 
-def plot_individual_agent(plots_path, tested_weights, test_results, weights_storage, agent_ix, x_axis):
+def plot_individual_agent(plots_path, tested_weights, test_results, agent_ix, x_axis):
     feature_names = ['rows_with_holes', 'column_transitions', 'holes', 'landing_height', 'cumulative_wells',
                      'row_transitions', 'eroded', 'hole_depth']
     # Compute tested_weight paths
@@ -97,14 +97,14 @@ def plot_individual_agent(plots_path, tested_weights, test_results, weights_stor
     fig1.savefig(os.path.join(plots_path, "weight_paths_tested" + str(agent_ix)))
     plt.close()
 
-    # Compute weights_storage paths
-    fig1, ax1 = plt.subplots()
-    for ix in range(weights_storage.shape[1]):
-        ax1.plot(weights_storage[:, ix], label=feature_names[ix])
-    plt.legend()
-    fig1.show()
-    fig1.savefig(os.path.join(plots_path, "weight_paths" + str(agent_ix)))
-    plt.close()
+    # # Compute weights_storage paths
+    # fig1, ax1 = plt.subplots()
+    # for ix in range(weights_storage.shape[1]):
+    #     ax1.plot(weights_storage[:, ix], label=feature_names[ix])
+    # plt.legend()
+    # fig1.show()
+    # fig1.savefig(os.path.join(plots_path, "weight_paths" + str(agent_ix)))
+    # plt.close()
 
     # # Compute weight distances
     # # tested_weights = np.random.normal(size=(4, 8))

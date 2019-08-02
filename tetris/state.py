@@ -92,8 +92,8 @@ class State(object):
     def get_features(self, direct_by, addRBF=False):  #, order_by=None, standardize_by=None, addRBF=False
         if not self.features_are_calculated:
             if self.feature_type == "bcts":
-                # if self.n_cleared_lines > 0:
                 self.calc_bcts_features()
+                self.features_are_calculated = True
                 # else:
                 #     # self.update_bcts_features()
                 #     # UPDATED_FEATURES = self.features.copy()
@@ -101,7 +101,7 @@ class State(object):
                 #     # if np.any(UPDATED_FEATURES != self.features):
                 #     #     print("BLA")
                 #     self.calc_bcts_features()
-                # self.features_are_calculated = True
+
             else:
                 raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
         # TODO: check whether copy is needed here.
@@ -117,6 +117,21 @@ class State(object):
                 np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.num_rows / 4) ** 2 / (2 * (self.num_rows / 5) ** 2))
                 ))
         return out
+
+    def get_features_no_dir(self, addRBF=False):  #, order_by=None, standardize_by=None, addRBF=False
+        if not self.features_are_calculated:
+            if self.feature_type == "bcts":
+                self.calc_bcts_features()
+                self.features_are_calculated = True
+            else:
+                raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
+        features = self.features
+        if addRBF:
+            features = np.concatenate((
+                features,
+                np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.num_rows / 4) ** 2 / (2 * (self.num_rows / 5) ** 2))
+                ))
+        return features
 
     # TODO: Implement order / directions...
     # def get_features_with_intercept(self):

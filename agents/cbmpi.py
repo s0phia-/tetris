@@ -4,7 +4,9 @@ import stew
 from stew.utils import create_ridge_matrix, create_diff_matrix, create_stnw_matrix
 import domtools
 
-from tetris import mcts, tetromino_old, game
+from stew import StewMultinomialLogit, ChoiceSetData
+
+from tetris import mcts, tetromino, game
 from tetris.utils import plot_analysis, plot_individual_agent, vert_one_hot
 from numba import njit
 from scipy.stats import binom_test
@@ -25,19 +27,12 @@ class Cbmpi:
         self.num_columns = num_columns
         self.feature_type = feature_type
         self.verbose = verbose
-        self.max_choice_set_size = 35
-        self.tetrominos = [tetromino_old.Straight(self.feature_type, self.num_features, self.num_columns),
-                           tetromino_old.RCorner(self.feature_type, self.num_features, self.num_columns),
-                           tetromino_old.LCorner(self.feature_type, self.num_features, self.num_columns),
-                           tetromino_old.Square(self.feature_type, self.num_features, self.num_columns),
-                           tetromino_old.SnakeR(self.feature_type, self.num_features, self.num_columns),
-                           tetromino_old.SnakeL(self.feature_type, self.num_features, self.num_columns),
-                           tetromino_old.T(self.feature_type, self.num_features, self.num_columns)]
-        self.tetromino_sampler = tetromino_old.TetrominoSampler(self.tetrominos)
+        self.max_choice_set_size = 34
+        self.tetromino_handler = tetromino.Tetromino(self.feature_type, self.num_features, self.num_columns)
 
         self.m = m  # rollout_size
         self.M = M  # number of independent rollouts per
-        assert (self.M == 1)
+        assert(self.M == 1)
         self.B = B  # budget
         if N is None:
             self.N = int(self.B / self.M / (self.m+1) / 32)
@@ -46,8 +41,6 @@ class Cbmpi:
             self.N = N  # number of states sampled from rollout_set D_k
         self.D = D  # rollout set
         self.D_k = None
-        # # TODO: put in learn??
-        # self.construct_rollout_set()
 
         # print("The budget is", self.B)
         self.gamma = 1
@@ -67,9 +60,9 @@ class Cbmpi:
 
         self.discrete_choice = discrete_choice
         if self.discrete_choice:
-            self.ols = True
-            self.model = stew.StewMultinomialLogit(num_features=self.num_features)
-            self.mlogit_data = MlogitData(num_features=self.num_features, max_choice_set_size=self.max_choice_set_size)
+            self.regularization = "no_regularization"
+            self.model = StewMultinomialLogit(num_features=self.num_features)
+            self.mlogit_data = ChoiceSetData(num_features=self.num_features, max_choice_set_size=self.max_choice_set_size)
         else:
             self.cma_es = cma.CMAEvolutionStrategy(np.random.normal(loc=0, scale=1, size=self.num_features), self.cmaes_var, inopts={'verb_disp': 0,
                                                                                    'verb_filenameprefix': "cmaesout" + str(id) + "_" + str(self.seed),
@@ -187,25 +180,26 @@ class Cbmpi:
         # print("Starting new value rollout")
         # print("------------------------------------")
         # print("------------------------------------")
-        while not game_ended and count < self.m:  # there are only (m-1) rollouts
-            tetromino_tmp = self.tetromino_sampler.next_tetromino()
-            # print("state_tmp.representation")
-            # print(state_tmp.representation)
-            state_tmp, _ = self.choose_action_value_rollout(start_state=state_tmp, start_tetromino=tetromino_tmp)
-            if state_tmp is None:
-                game_ended = True
-            else:
-                value_estimate += (self.gamma ** count) * state_tmp.reward
+        while not state_tmp.terminal_state and count < self.m:  # there are only (m-1) rollouts
+            self.tetromino_handler.next_tetromino()
+            available_after_states = self.tetromino_handler.get_after_states(state_tmp)
+            if len(available_after_states) == 0:
+                return value_estimate
+            state_tmp = choose_action_in_rollout(available_after_states, policy_weights,
+                                                 # rollout_dom_filter, rollout_cumu_dom_filter,
+                                                 feature_directors, num_features)
+            value_estimate += self.gamma ** count * state_tmp.n_cleared_lines
             count += 1
 
         # One more (the m-th) for truncation value!
-        if not game_ended:
+        if not state_tmp.terminal_state:
             tetromino_tmp = self.tetromino_sampler.next_tetromino()
             state_tmp, _ = self.choose_action_value_rollout(start_state=state_tmp, start_tetromino=tetromino_tmp)
-            if state_tmp is not None:
-                final_state_features = state_tmp.get_features(direct_by=None, order_by=None, standardize_by=None, addRBF=True)
-                # value_estimate += self.gamma ** count + final_state_features.dot(self.value_weights)
-                value_estimate += (self.gamma ** count) * self.lin_reg.predict(final_state_features.reshape(1, -1))
+            if len(available_after_states) == 0:
+                return value_estimate
+            final_state_features = state_tmp.get_features(direct_by=None,  addRBF=True) # order_by=None, standardize_by=None,
+            # value_estimate += self.gamma ** count + final_state_features.dot(self.value_weights)
+            value_estimate += (self.gamma ** count) * self.lin_reg.predict(final_state_features.reshape(1, -1))
         return value_estimate
 
     def action_value_roll_out(self, start_state):
@@ -221,7 +215,7 @@ class Cbmpi:
             return action_value_estimates, None
         for child_ix in range(num_children):
             state_tmp = children_states[child_ix]
-            state_action_features[child_ix] = state_tmp.get_features(direct_by=None, order_by=None, standardize_by=None)
+            state_action_features[child_ix] = state_tmp.get_features(direct_by=None) # order_by=None, standardize_by=None
             cumulative_reward = state_tmp.reward
             # cumulative_reward = 0
 
@@ -248,7 +242,7 @@ class Cbmpi:
                 tetromino_tmp = self.tetromino_sampler.next_tetromino()
                 state_tmp, _ = self.choose_action_q_rollout(start_state=state_tmp, start_tetromino=tetromino_tmp)
                 if state_tmp is not None:
-                    final_state_features = state_tmp.get_features(direct_by=None, order_by=None, standardize_by=None, addRBF=True)
+                    final_state_features = state_tmp.get_features_no_dir(True)
                     # cumulative_reward += self.gamma ** count + final_state_features.dot(self.value_weights)
                     cumulative_reward += (self.gamma ** count) * self.lin_reg.predict(final_state_features.reshape(1, -1))
 
@@ -268,39 +262,35 @@ class Cbmpi:
             return None, 0
         action_features = np.zeros((num_states, self.num_features))
         for ix, after_state in enumerate(available_after_states):
-            action_features[ix] = after_state.get_features(direct_by=None, order_by=None, standardize_by=None)
+            action_features[ix] = after_state.get_features_no_dir(direct_by=None, order_by=None, standardize_by=None)
         utilities = action_features.dot(self.policy_weights)
         max_indices = np.where(utilities == np.max(utilities))[0]
         move_index = np.random.choice(max_indices)
         move = available_after_states[move_index]
         return move, move_index
 
-    def choose_action_test(self, start_state, start_tetromino):
-        # Returning the first state if game is over.
-        all_available_after_states = start_tetromino.get_after_states(current_state=start_state)
-        available_after_states = np.array([child for child in all_available_after_states if not child.terminal_state])
-        num_states = len(available_after_states)
-        if num_states == 0:
-            # Game over!
-            return all_available_after_states[0], 0
-        action_features = np.zeros((num_states, self.num_features))
-        for ix, after_state in enumerate(available_after_states):
-            action_features[ix] = after_state.get_features(direct_by=None, order_by=None, standardize_by=None)
-        utilities = action_features.dot(self.policy_weights)
-        max_indices = np.where(utilities == np.max(utilities))[0]
-        move_index = np.random.choice(max_indices)
-        move = available_after_states[move_index]
-        return move, move_index
 
-    def choose_action_test_hard(self, start_state, start_tetromino):
-        # Returning the first state if game is over.
-        available_after_states = start_tetromino.get_after_states(current_state=start_state)
-        num_states = len(available_after_states)
-        action_features = np.zeros((num_states, self.num_features))
-        for ix, after_state in enumerate(available_after_states):
-            action_features[ix] = after_state.get_features(direct_by=None, order_by=None, standardize_by=None)
-        utilities = action_features.dot(self.policy_weights)
-        max_indices = np.where(utilities == np.max(utilities))[0]
-        move_index = np.random.choice(max_indices)
-        move = available_after_states[move_index]
-        return move, move_index
+@njit(cache=False)
+def choose_action_in_rollout(available_after_states, policy_weights,
+                             # rollout_dom_filter, rollout_cumu_dom_filter,
+                             feature_directors, num_features):
+    num_states = len(available_after_states)
+    action_features = np.zeros((num_states, num_features))
+    for ix, after_state in enumerate(available_after_states):
+        action_features[ix] = after_state.get_features_no_dir(False)  # , order_by=self.feature_order
+    # if rollout_cumu_dom_filter:
+    #     not_simply_dominated, not_cumu_dominated = dom_filter(action_features, len_after_states=num_states)  # domtools.
+    #     action_features = action_features[not_cumu_dominated]
+    #     map_back_vector = np.nonzero(not_cumu_dominated)[0]
+    #     # if rollout_cumu_dom_filter:
+    #     #     available_after_states = available_after_states[not_simply_dominated]
+    #     #     action_features = action_features[not_simply_dominated]
+    #     # elif rollout_dom_filter:
+    #     #     available_after_states = available_after_states[not_cumu_dominated]
+    #     #     action_features = action_features[not_cumu_dominated]
+    # else:
+    #     raise ValueError("Currently only implemented with cumu_dom_filter")
+    utilities = action_features.dot(np.ascontiguousarray(policy_weights))
+    move_index = np.argmax(utilities)
+    move = available_after_states[move_index]
+    return move
