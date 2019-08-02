@@ -195,8 +195,9 @@ def choose_action_in_rollout(available_after_states, policy_weights,
         action_features[ix] = after_state.get_features(feature_directors, False)  # , order_by=self.feature_order
     if rollout_cumu_dom_filter:
         not_simply_dominated, not_cumu_dominated = dom_filter(action_features, len_after_states=num_states)  # domtools.
-        action_features = action_features[not_cumu_dominated]
-        map_back_vector = np.nonzero(not_cumu_dominated)[0]
+        # TODO: Switch back to simply?
+        action_features = action_features[not_simply_dominated]
+        map_back_vector = np.nonzero(not_simply_dominated)[0]
         # if rollout_cumu_dom_filter:
         #     available_after_states = available_after_states[not_simply_dominated]
         #     action_features = action_features[not_simply_dominated]
