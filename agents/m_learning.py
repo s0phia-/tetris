@@ -35,6 +35,7 @@ class MLearning:
                  verbose=False,
                  verbose_stew=False):
 
+        self.name = "mlearning"
         # Tetris params
         self.num_columns = num_columns  # ...of the Tetris board
         self.feature_type = feature_type
@@ -195,7 +196,7 @@ def choose_action_in_rollout(available_after_states, policy_weights,
         action_features[ix] = after_state.get_features(feature_directors, False)  # , order_by=self.feature_order
     if rollout_cumu_dom_filter:
         not_simply_dominated, not_cumu_dominated = dom_filter(action_features, len_after_states=num_states)  # domtools.
-        # TODO: Switch back to simply?
+        # TODO: Switch back to cumul?
         action_features = action_features[not_simply_dominated]
         map_back_vector = np.nonzero(not_simply_dominated)[0]
         # if rollout_cumu_dom_filter:

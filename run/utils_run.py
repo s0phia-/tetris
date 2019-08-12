@@ -1,6 +1,9 @@
 import os
 import json
 from tetris.utils import Bunch
+from tetris import state
+import numpy as np
+from numba import njit
 
 
 def create_directories(run_id):
@@ -35,5 +38,46 @@ def process_parameters(param_dict, run_id_path):
 
     p = Bunch(param_dict)
     return p
+
+
+def load_D(p, max_samples):
+    sample_list_save_name = p.D
+    with open(sample_list_save_name, "r") as ins:
+        D = []
+        count = 0
+        for x in ins:
+            if count < max_samples:
+                rep = np.vstack((np.array([np.array([int(z) for z in bin(int(y))[3:13]]) for y in x.split()]),
+                           np.zeros((4, p.num_columns))))
+                rep = rep.astype(np.bool_)
+                lowest_free_rows = calc_lowest_free_rows(rep)
+                D.append(state.State(rep,
+                                     lowest_free_rows,
+                                     np.array([0], dtype=np.int64),  # changed_lines=
+                                     np.array([0], dtype=np.int64),  # pieces_per_changed_row=
+                                     0.0,  # landing_height_bonus=
+                                     8,  # num_features=
+                                     "bcts",  # feature_type=
+                                     False  # terminal_state=
+                                     ))
+            count += 1
+
+    average_lowest_free_rows = np.mean([np.mean(d.lowest_free_rows) for d in D])
+    print("average_lowest_free_rows", average_lowest_free_rows)
+    return D
+
+
+@njit(fastmath=True, cache=False)
+def calc_lowest_free_rows(rep):
+    num_rows, n_cols = rep.shape
+    lowest_free_rows = np.zeros(n_cols, dtype=np.int64)
+    for col_ix in range(n_cols):
+        lowest = 0
+        for row_ix in range(num_rows - 1, -1, -1):
+            if rep[row_ix, col_ix] == 1:
+                lowest = row_ix + 1
+                break
+        lowest_free_rows[col_ix] = lowest
+    return lowest_free_rows
 
 

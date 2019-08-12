@@ -62,7 +62,7 @@ class State(object):
             self.landing_height_bonus = landing_height_bonus
             self.num_features = num_features
             self.feature_type = feature_type  # "bcts"
-            self.n_cleared_lines = 0
+            self.n_cleared_lines = 0  # Gets updated in self.clear_lines()
             self.anchor_row = changed_lines[0]
             self.cleared_rows_relative_to_anchor = self.clear_lines(changed_lines)
             # # TODO: REMOVE FOR SPEED
@@ -118,7 +118,7 @@ class State(object):
                 ))
         return out
 
-    def get_features_no_dir(self, addRBF=False):  #, order_by=None, standardize_by=None, addRBF=False
+    def get_features_no_dir(self, addRBFandIntercept=False):  #, order_by=None, standardize_by=None, addRBF=False
         if not self.features_are_calculated:
             if self.feature_type == "bcts":
                 self.calc_bcts_features()
@@ -126,8 +126,9 @@ class State(object):
             else:
                 raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
         features = self.features
-        if addRBF:
+        if addRBFandIntercept:
             features = np.concatenate((
+                np.array([1.]),
                 features,
                 np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.num_rows / 4) ** 2 / (2 * (self.num_rows / 5) ** 2))
                 ))
@@ -967,6 +968,6 @@ def numba_sum(arr):
 #                 break
 #         lowest_free_rows[col_ix] = lowest
 #     return lowest_free_rows
-#
-#
+
+
 

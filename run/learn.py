@@ -57,23 +57,26 @@ def learn_and_evaluate(env,
                 print("Game was over. Env had to be reset!")
                 env.reset()
 
-            choosing_action_time_start = time.time()
-            after_state, action_index, action_features = agent.choose_action(start_state=env.current_state,
-                                                                             start_tetromino=env.tetromino_handler)
-
-            # print("Choosing an action took: " + str(time.time() - choosing_action_time_start) + " seconds.")
-
-            # print("CURRENT STEP: " + str(env.cumulative_steps))
-            env.make_step(after_state)
+            if agent.name in ["mlearning"]:
+                choosing_action_time_start = time.time()
+                after_state, action_index, action_features = agent.choose_action(start_state=env.current_state,
+                                                                                 start_tetromino=env.tetromino_handler)
+                print("Choosing an action took: " + str(time.time() - choosing_action_time_start) + " seconds.")
+                # print("CURRENT STEP: " + str(env.cumulative_steps))
+                env.make_step(after_state)
+            elif agent.name in ["cbmpi"]:
+                env.cumulative_steps += 1
 
             # LEARN
             if agent.is_learning and not env.game_over:
                 # print("Started learning")
                 # learning_time_start = time.time()
-                agent.learn(action_features=action_features, action_index=action_index)
-
+                if agent.name == "mlearning":
+                    agent.learn(action_features=action_features, action_index=action_index)
+                    agent.step += 1
+                elif agent.name == "cbmpi":
+                    agent.learn()
                 # print("self.agent.mlogit_data.choice_set_counter: " + str(agent.mlogit_data.choice_set_counter))
                 # print("self.agent.mlogit_data.current_number_of_choice_sets: " + str(agent.mlogit_data.current_number_of_choice_sets))
-            agent.step += 1
 
         return test_results, tested_weights # , weights_storage
