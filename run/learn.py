@@ -25,9 +25,10 @@ def learn_and_evaluate(env,
                        num_tests,
                        num_test_games,
                        test_points,
-                       agent_id=0):
+                       agent_id=0,
+                       feature_directors=np.array([-1, -1, -1, -1, -1, -1, 1, -1])):
         env.reset()
-        test_agent = ConstantAgent(policy_weights=np.ones(env.num_features))
+        test_agent = ConstantAgent(policy_weights=np.ones(env.num_features), feature_directors=feature_directors)
         test_results = np.zeros((num_tests, num_test_games))
         tested_weights = np.zeros((num_tests, env.num_features))
         # weights_storage = np.expand_dims(self.agent.policy_weights, axis=0)
@@ -42,7 +43,7 @@ def learn_and_evaluate(env,
                 test_agent.policy_weights = test_weights
                 tested_weights[test_index] = test_weights
                 print("tested_weights", tested_weights)
-                testing_time_start = time.time()
+                # testing_time_start = time.time()
                 print("Agent", agent_id, "is TESTING: ", test_index + 1, " out of ", num_tests, " tests.")
                 test_results[test_index, :] = evaluate(test_env, test_agent, num_test_games)
                 print("Agent", agent_id, "Mean: ", np.mean(test_results[test_index, :]), ", Median: ", np.median(test_results[test_index, :]))

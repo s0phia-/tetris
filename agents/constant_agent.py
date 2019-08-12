@@ -9,18 +9,19 @@ spec_agent = [
     ('feature_directors', int64[:]),
     ('feature_type', numba.types.string),
     ('num_features', int64),
+    ('feature_directors', int64[:])
 ]
 
 
 @jitclass(spec_agent)
 class ConstantAgent:
-    def __init__(self, policy_weights, feature_type="bcts"):
+    def __init__(self, policy_weights, feature_type="bcts", feature_directors=np.array([-1, -1, -1, -1, -1, -1, 1, -1])):
         self.policy_weights = policy_weights
         self.feature_type = feature_type
         self.num_features = len(self.policy_weights)
         if self.feature_type == "bcts":
             print("Features are directed automatically to be BCTS features.")
-            self.feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1])
+            self.feature_directors = feature_directors
         # else:
         #     self.feature_directors = feature_directors
 
