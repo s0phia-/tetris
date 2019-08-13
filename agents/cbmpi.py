@@ -61,7 +61,7 @@ class Cbmpi:
             self.cma_es = cma.CMAEvolutionStrategy(
                 np.random.normal(loc=0, scale=1, size=self.num_features),
                 self.cmaes_var, inopts={'verb_disp': 0,
-                                        'verb_filenameprefix': "cmaesout_" + str(self.seed),
+                                        'verb_filenameprefix': "output/cmaesout" + str(self.seed),
                                         'popsize': self.n})
 
     def learn(self):
@@ -133,7 +133,7 @@ class Cbmpi:
         else:
             self.cma_es = cma.CMAEvolutionStrategy(np.random.normal(loc=0, scale=1, size=self.num_features), self.cmaes_var,
                                                    inopts={'verb_disp': 0,
-                                                           'verb_filenameprefix': "cmaesout_" + str(self.seed),
+                                                           'verb_filenameprefix': "output/cmaesout" + str(self.seed),
                                                            'popsize': self.n})
             # self.policy_weights = self.cma_es.optimize(self.policy_loss_function, min_iterations=1).result.xbest
             self.policy_weights = self.cma_es.optimize(lambda x: policy_loss_function(x, self.N, self.did_rollout, self.state_action_features,

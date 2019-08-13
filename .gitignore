@@ -5,7 +5,7 @@ run_experiments/
 *experiments/
 *t2019_*
 output/
-cmaesout_*
+cmaesout*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
