@@ -11,7 +11,8 @@ import time
 class Cbmpi:
     def __init__(self, m, N, M, B, D,
                  feature_type, num_columns,
-                 cmaes_var, verbose, seed=0, id="",
+                 cmaes_var, min_iterations,
+                 verbose, seed=0, id="",
                  discrete_choice=False):
         self.name = "cbmpi"
         self.is_learning = True
@@ -42,6 +43,7 @@ class Cbmpi:
         self.zeta = 0.5  # CMA-ES parameter ( // 2 is standard in cma)
         self.n = int(self.num_features * 15)  # CMA-ES parameter ('popsize' in cma)
         self.cmaes_var = cmaes_var
+        self.min_iterations = min_iterations
 
         self.policy_weights = np.random.normal(loc=0, scale=self.cmaes_var, size=self.num_features)
         self.value_weights = np.zeros(self.num_value_features + 1)
@@ -138,7 +140,7 @@ class Cbmpi:
             # self.policy_weights = self.cma_es.optimize(self.policy_loss_function, min_iterations=1).result.xbest
             self.policy_weights = self.cma_es.optimize(lambda x: policy_loss_function(x, self.N, self.did_rollout, self.state_action_features,
                                                                                       self.num_available_actions, self.state_action_values),
-                                                       min_iterations=1).result.xbest
+                                                       min_iterations=self.min_iterations).result.xbest
         end_time = time.time()
         if self.verbose:
             print("CMAES took " + str((end_time - start_time) / 60) + " minutes.")
