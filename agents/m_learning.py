@@ -1,5 +1,5 @@
 import numpy as np
-from domtools import dom_filter
+from domtools import dom_filter as dominance_filter
 from tetris import tetromino
 from stew import StewMultinomialLogit, ChoiceSetData
 from stew.utils import create_diff_matrix, create_ridge_matrix
@@ -14,7 +14,7 @@ class MLearning:
     """
     def __init__(self,
                  regularization,
-                 dominance_filter,
+                 dom_filter,
                  cumu_dom_filter,
                  rollout_dom_filter,
                  rollout_cumu_dom_filter,
@@ -53,7 +53,7 @@ class MLearning:
         self.rollout_length = rollout_length
         self.number_of_rollouts_per_child = number_of_rollouts_per_child
         self.num_total_rollouts = self.rollout_length * self.number_of_rollouts_per_child
-        self.dom_filter = dominance_filter
+        self.dom_filter = dom_filter
         self.cumu_dom_filter = cumu_dom_filter
         self.rollout_dom_filter = rollout_dom_filter
         self.rollout_cumu_dom_filter = rollout_cumu_dom_filter
@@ -86,13 +86,6 @@ class MLearning:
         self.max_batch_size = max_batch_size
         self.step_since_last = 0
 
-    # def reset_agent(self):
-    #     self.step = 0
-
-    # def create_rollout_tetrominos(self):
-    #     self.rollout_tetrominos = np.array([self.tetromino_sampler.next_tetromino() for _ in range(self.num_total_rollouts)])
-    #     self.rollout_tetrominos.shape = (self.rollout_length, self.number_of_rollouts_per_child)
-
     def choose_action(self, start_state, start_tetromino):
         return choose_action_using_rollouts(start_state, start_tetromino,
                                             self.rollout_length, self.tetromino_handler, self.policy_weights,
@@ -123,7 +116,7 @@ class MLearning:
 @njit(cache=False)
 def choose_action_using_rollouts(start_state, start_tetromino,
                                  rollout_length, tetromino_handler, policy_weights,
-                                 dominance_filter, cumu_dom_filter, rollout_dom_filter, rollout_cumu_dom_filter,
+                                 dom_filter, cumu_dom_filter, rollout_dom_filter, rollout_cumu_dom_filter,
                                  feature_directors, num_features, gamma,
                                  number_of_rollouts_per_child):
     children_states = start_tetromino.get_after_states(start_state)
@@ -137,31 +130,56 @@ def choose_action_using_rollouts(start_state, start_tetromino,
     action_features = np.zeros((num_children, num_features), dtype=np.float_)
     for ix in range(num_children):
         action_features[ix] = children_states[ix].get_features(feature_directors, False)  # , order_by=self.feature_order
-    if dominance_filter or cumu_dom_filter:
-        not_simply_dominated, not_cumu_dominated = dom_filter(action_features, len_after_states=num_children)  # domtools.
-    #     if cumu_dom_filter:
-    #         children_states = children_states[not_cumu_dominated]
-    #         map_back_vector = np.nonzero(not_cumu_dominated)[0]
-    #     else:  # Only simple dominance
-    #         children_states = children_states[not_simply_dominated]
-    #         map_back_vector = np.nonzero(not_simply_dominated)[0]
-    #     num_children = len(children_states)
-    # else:
-    #     map_back_vector = np.arange(num_children)
+    if dom_filter or cumu_dom_filter:
+        not_simply_dominated, not_cumu_dominated = dominance_filter(action_features, len_after_states=num_children)  # domtools.
+
     child_total_values = np.zeros(num_children)
-    # self.create_rollout_tetrominos()
+
+    # if cumu_dom_filter:
+    #     for child in range(num_children):
+    #         if not_cumu_dominated[child]:
+    #             for rollout_ix in range(number_of_rollouts_per_child):
+    #                 child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler, policy_weights,
+    #                                                       rollout_dom_filter, rollout_cumu_dom_filter,
+    #                                                       feature_directors, num_features, gamma)
+    #         else:
+    #             child_total_values[child] = -np.inf
+    # elif dom_filter:
+    #     for child in range(num_children):
+    #         if not_simply_dominated[child]:
+    #             for rollout_ix in range(number_of_rollouts_per_child):
+    #                 child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler, policy_weights,
+    #                                                       rollout_dom_filter, rollout_cumu_dom_filter,
+    #                                                       feature_directors, num_features, gamma)
+    #         else:
+    #             child_total_values[child] = -np.inf
+    # else:
+    #     for child in range(num_children):
+    #         for rollout_ix in range(number_of_rollouts_per_child):
+    #             child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler, policy_weights,
+    #                                                   rollout_dom_filter, rollout_cumu_dom_filter,
+    #                                                   feature_directors, num_features, gamma)
+
     for child in range(num_children):
-        # TODO: ONLY WORKS WITH cumu_dom_filter ON
-        if not_cumu_dominated[child]:
+        do_rollout = False
+        if cumu_dom_filter:
+            if not_cumu_dominated[child]:
+                do_rollout = True
+        elif dom_filter:
+            if not_simply_dominated[child]:
+                do_rollout = True
+        else:
+            do_rollout = True
+
+        if do_rollout:
             for rollout_ix in range(number_of_rollouts_per_child):
                 child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler, policy_weights,
                                                       rollout_dom_filter, rollout_cumu_dom_filter,
                                                       feature_directors, num_features, gamma)
         else:
             child_total_values[child] = -np.inf
+
     child_index = np.argmax(child_total_values)
-    # children_states[child_index].value_estimate = child_total_values[child_index]
-    # before_filter_index = map_back_vector[child_index]  # Needed for probabilities in gradient in learn()
     return children_states[child_index], child_index, action_features
 
 
@@ -194,19 +212,16 @@ def choose_action_in_rollout(available_after_states, policy_weights,
     action_features = np.zeros((num_states, num_features))
     for ix, after_state in enumerate(available_after_states):
         action_features[ix] = after_state.get_features(feature_directors, False)  # , order_by=self.feature_order
-    if rollout_cumu_dom_filter:
-        not_simply_dominated, not_cumu_dominated = dom_filter(action_features, len_after_states=num_states)  # domtools.
-        # TODO: Switch back to cumul?
-        action_features = action_features[not_simply_dominated]
-        map_back_vector = np.nonzero(not_simply_dominated)[0]
-        # if rollout_cumu_dom_filter:
-        #     available_after_states = available_after_states[not_simply_dominated]
-        #     action_features = action_features[not_simply_dominated]
-        # elif rollout_dom_filter:
-        #     available_after_states = available_after_states[not_cumu_dominated]
-        #     action_features = action_features[not_cumu_dominated]
-    else:
-        raise ValueError("Currently only implemented with cumu_dom_filter")
+    if rollout_dom_filter or rollout_cumu_dom_filter:
+        not_simply_dominated, not_cumu_dominated = dominance_filter(action_features, len_after_states=num_states)  # domtools.
+        if rollout_cumu_dom_filter:
+            action_features = action_features[not_cumu_dominated]
+            map_back_vector = np.nonzero(not_cumu_dominated)[0]
+        elif rollout_dom_filter:
+            action_features = action_features[not_simply_dominated]
+            map_back_vector = np.nonzero(not_simply_dominated)[0]
+        else:
+            map_back_vector = np.arange(num_features)
     utilities = action_features.dot(np.ascontiguousarray(policy_weights))
     move_index = np.argmax(utilities)
     move = available_after_states[map_back_vector[move_index]]

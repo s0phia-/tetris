@@ -76,7 +76,7 @@ def run_loop(p, seed):
     random.seed(seed + p.seed)
     np.random.seed(seed + p.seed)
     agent = m_learning.MLearning(regularization=p.regularization,
-                                 dominance_filter=p.dominance_filter,
+                                 dom_filter=p.dominance_filter,
                                  cumu_dom_filter=p.cumu_dom_filter,
                                  rollout_dom_filter=p.rollout_dom_filter,
                                  rollout_cumu_dom_filter=p.rollout_cumu_dom_filter,
