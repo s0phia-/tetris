@@ -117,8 +117,7 @@ class MLearning:
 def choose_action_using_rollouts(start_state, start_tetromino,
                                  rollout_length, tetromino_handler, policy_weights,
                                  dom_filter, cumu_dom_filter, rollout_dom_filter, rollout_cumu_dom_filter,
-                                 feature_directors, num_features, gamma,
-                                 number_of_rollouts_per_child):
+                                 feature_directors, num_features, gamma, number_of_rollouts_per_child):
     children_states = start_tetromino.get_after_states(start_state)
     num_children = len(children_states)
     if num_children == 0:
@@ -220,8 +219,8 @@ def choose_action_in_rollout(available_after_states, policy_weights,
         elif rollout_dom_filter:
             action_features = action_features[not_simply_dominated]
             map_back_vector = np.nonzero(not_simply_dominated)[0]
-        else:
-            map_back_vector = np.arange(num_features)
+    else:
+        map_back_vector = np.arange(num_states)
     utilities = action_features.dot(np.ascontiguousarray(policy_weights))
     move_index = np.argmax(utilities)
     move = available_after_states[map_back_vector[move_index]]

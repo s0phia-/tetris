@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from numba import njit
-import json
 # import telegram
 from os.path import expanduser
 home = expanduser("~")
@@ -61,11 +60,56 @@ def softmax(U):
     return ps
 
 
+def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_axis):
+    # Plot and save learning curves.
+    fig1, ax1 = plt.subplots()
+    for test_results_ix in range(len(compare_results)):
+        test_results = compare_results[test_results_ix]
+        mean_array = np.mean(test_results, axis=(0, 2))
+        ax1.plot(x_axis, mean_array, label=compare_ids[test_results_ix])
+
+    plt.title('Mean performance')
+    plt.xlabel('Iteration')
+    plt.ylabel('Mean score')
+    plt.legend()
+    plt.show()
+    fig1.savefig(os.path.join(plots_path, "mean_performance"))
+    plt.close()
+
+    fig1, ax1 = plt.subplots()
+    for test_results_ix in range(len(compare_results)):
+        test_results = compare_results[test_results_ix]
+        mean_array = np.median(test_results, axis=(0, 2))
+        ax1.plot(x_axis, mean_array, label=compare_ids[test_results_ix])
+
+    plt.title('Median performance')
+    plt.xlabel('Iteration')
+    plt.ylabel('Median score')
+    plt.legend()
+    plt.show()
+    fig1.savefig(os.path.join(plots_path, "median_performance"))
+    plt.close()
+
+    fig1, ax1 = plt.subplots()
+    for test_results_ix in range(len(compare_results)):
+        test_results = compare_results[test_results_ix]
+        mean_array = np.max(test_results, axis=(0, 2))
+        ax1.plot(x_axis, mean_array, label=compare_ids[test_results_ix])
+
+    plt.title('Max performance')
+    plt.xlabel('Iteration')
+    plt.ylabel('Max score')
+    plt.legend()
+    plt.show()
+    fig1.savefig(os.path.join(plots_path, "max_performance"))
+    plt.close()
+
+
 def plot_learning_curve(plots_path, test_results, x_axis):
+
     mean_array = np.mean(test_results, axis=(0, 2))
     median_array = np.median(test_results, axis=(0, 2))
     max_array = np.max(test_results, axis=(0, 2))
-
 
     # Plot and save learning curves.
     fig1, ax1 = plt.subplots()
