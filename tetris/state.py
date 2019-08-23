@@ -39,19 +39,12 @@ class State(object):
     def __init__(self,
                  representation,
                  lowest_free_rows,
-                 # changed_cols, #=np.array([0], dtype=np.int64),
-                 changed_lines, #=np.array([0], dtype=np.int64),
-                 pieces_per_changed_row, #=np.array([0], dtype=np.int64),
-                 landing_height_bonus, # =0.0,
-                 num_features, #=8,
-                 feature_type, #="bcts",
-                 terminal_state
-                 # col_transitions_per_col, #=np.array([0], dtype=np.int64),
-                 # row_transitions_per_col, #=np.array([0], dtype=np.int64),
-                 # array_of_rows_with_holes, #=np.array([100], dtype=np.int64),
-                 # holes_per_col, #=np.array([0], dtype=np.int64),
-                 # hole_depths_per_col, #=np.array([0], dtype=np.int64),
-                 # cumulative_wells_per_col #=np.array([0], dtype=np.int64)):  # , features=np.zeros(1, dtype=np.float64)
+                 changed_lines,  #=np.array([0], dtype=np.int64),
+                 pieces_per_changed_row,  #=np.array([0], dtype=np.int64),
+                 landing_height_bonus,  # =0.0,
+                 num_features,  #=8,
+                 feature_type,  #="bcts",
+                 terminal_state  # this is useful to generate a "terminal state"
                  ):
         self.terminal_state = terminal_state
         if not terminal_state:
@@ -69,6 +62,7 @@ class State(object):
             # assert np.all(calc_lowest_free_rows(self.representation) == self.lowest_free_rows)
             self.features_are_calculated = False
             self.features = np.zeros(self.num_features, dtype=np.float64)
+            self.terminal_state = check_terminal(self.representation)
             # self.value_estimate = 0.0
 
 
@@ -904,14 +898,14 @@ def numba_sum(arr):
     #     # assert cumulative_wells == np.sum(self.cumulative_wells_per_col)
 
 
-# @njit(fastmath=True, cache=False)
-# def check_terminal(representation, num_rows):
-#     is_terminal = False
-#     for ix in representation[num_rows]:
-#         if ix:
-#             is_terminal = True
-#             break
-#     return is_terminal
+@njit(cache=False)
+def check_terminal(representation, num_rows):
+    is_terminal = False
+    for ix in representation[num_rows]:
+        if ix:
+            is_terminal = True
+            break
+    return is_terminal
 
 
 # @njit(fastmath=True, cache=False, debug=True)

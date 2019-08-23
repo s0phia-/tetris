@@ -45,12 +45,10 @@ class Tetromino:
     def next_tetromino(self):
         self.current_tetromino = np.random.choice(self.tetromino_names)
 
-    #     def __repr__(self):
-#         return '''
-# ██ ██ ██ ██'''
-
     def get_after_states(self, current_state):
-        # after_states = List()
+        # This version of get_after_states() reintroduces the possibility that
+        # a tetromino is placed such it is legal AFTER lines are cleared (but not BEFORE).
+
         after_states = []
 
         if self.current_tetromino == 0:
@@ -65,26 +63,31 @@ class Tetromino:
                     new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
                     new_state = state.State(new_representation,
                                             new_lowest_free_rows,
-                                            # np.array([col_ix], dtype=np.int64),
                                             np.arange(anchor_row, anchor_row + 4, 1, np.int64),
                                             np.array([1, 1, 1, 1], dtype=np.int64),
                                             1.5,
                                             self.num_features,
                                             self.feature_type,
                                             False)
-
-                                            # current_state.col_transitions_per_col,
-                                            # current_state.row_transitions_per_col,
-                                            # current_state.array_of_rows_with_holes,
-                                            # current_state.holes_per_col,
-                                            # current_state.hole_depths_per_col,
-                                            # current_state.cumulative_wells_per_col)
                     after_states.append(new_state)
+                # else:
+                #     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+                #     new_lowest_free_rows[col_ix] += 4
+                #     new_representation = current_state.representation.copy()
+                #     new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
+                #     new_state = state.State(new_representation,
+                #                             new_lowest_free_rows,
+                #                             np.arange(anchor_row, anchor_row + 4, 1, np.int64),
+                #                             np.array([1, 1, 1, 1], dtype=np.int64),
+                #                             1.5,
+                #                             self.num_features,
+                #                             self.feature_type,
+                #                             False)
+                #     after_states.append(new_state)
+
 
                 # Horizontal placements
                 if col_ix < self.num_columns - 3:
-                # max_col_index = self.num_columns - 3
-                # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
                     anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 4)])
                     if not anchor_row + 1 > current_state.num_rows:
                         new_lowest_free_rows = current_state.lowest_free_rows.copy()
@@ -599,4 +602,547 @@ class Tetromino:
             raise ValueError("wrong current tetromino!")
 
         return after_states
+
+    # def get_after_states(self, current_state):
+    #     # after_states = List()
+    #     after_states = []
+    #
+    #     if self.current_tetromino == 0:
+    #         # STRAIGHT
+    #         # Vertical placements
+    #         for col_ix, free_pos in enumerate(current_state.lowest_free_rows):
+    #             anchor_row = free_pos
+    #             if not anchor_row + 4 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix] += 4
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[anchor_row:(anchor_row + 4), col_ix] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         np.arange(anchor_row, anchor_row + 4, 1, np.int64),
+    #                                         np.array([1, 1, 1, 1], dtype=np.int64),
+    #                                         1.5,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #                 after_states.append(new_state)
+    #
+    #             # Horizontal placements
+    #             if col_ix < self.num_columns - 3:
+    #             # max_col_index = self.num_columns - 3
+    #             # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 4)])
+    #                 if not anchor_row + 1 > current_state.num_rows:
+    #                     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                     new_lowest_free_rows[col_ix:(col_ix + 4)] = anchor_row + 1
+    #                     new_representation = current_state.representation.copy()
+    #                     new_representation[anchor_row, col_ix:(col_ix + 4)] = 1
+    #                     new_state = state.State(new_representation,
+    #                                             new_lowest_free_rows,
+    #                                             # np.arange(col_ix, col_ix + 4, 1, np.int64),
+    #                                             np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+    #                                             np.array([4], dtype=np.int64),
+    #                                             0,
+    #                                             self.num_features,
+    #                                             self.feature_type,
+    #                                             False)
+    #                                             # current_state.col_transitions_per_col,
+    #                                             # current_state.row_transitions_per_col,
+    #                                             # current_state.array_of_rows_with_holes,
+    #                                             # current_state.holes_per_col,
+    #                                             # current_state.hole_depths_per_col,
+    #                                             # current_state.cumulative_wells_per_col)
+    #                     after_states.append(new_state)
+    #     elif self.current_tetromino == 1:
+    #         # SQUARE
+    #         # Horizontal placements
+    #         max_col_index = self.num_columns - 1
+    #         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
+    #             if not anchor_row + 2 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[anchor_row:(anchor_row + 2), col_ix:(col_ix + 2)] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         # np.arange(col_ix, col_ix + 2, 1, np.int64),
+    #                                         np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+    #                                         np.array([2, 2], dtype=np.int64),
+    #                                         0.5,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #                 # current_state.col_transitions_per_col,
+    #                 # current_state.row_transitions_per_col,
+    #                 # current_state.array_of_rows_with_holes,
+    #                 # current_state.holes_per_col,
+    #                 # current_state.hole_depths_per_col,
+    #                 # current_state.cumulative_wells_per_col
+    #                 # )
+    #                 after_states.append(new_state)
+    #     elif self.current_tetromino == 2:
+    #         # SNAKER
+    #         # Vertical placements
+    #         max_col_index = self.num_columns - 1
+    #         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1, current_state.lowest_free_rows[col_ix + 1])
+    #             if not anchor_row + 3 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix] = anchor_row + 3
+    #                 new_lowest_free_rows[col_ix + 1] = anchor_row + 2
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix] = 1
+    #                 new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         # np.arange(col_ix, col_ix + 2, 1, np.int64),
+    #                                         np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+    #                                         np.array([1, 2], dtype=np.int64),
+    #                                         1,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #
+    #                 # current_state.col_transitions_per_col,
+    #                 # current_state.row_transitions_per_col,
+    #                 # current_state.array_of_rows_with_holes,
+    #                 # current_state.holes_per_col,
+    #                 # current_state.hole_depths_per_col,
+    #                 # current_state.cumulative_wells_per_col)
+    #                 after_states.append(new_state)
+    #
+    #             # Horizontal placements
+    #             # max_col_index = self.num_columns - 2
+    #             # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #             if col_ix < self.num_columns - 2:
+    #                 anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]),
+    #                                         current_state.lowest_free_rows[col_ix + 2] - 1)
+    #                 if not anchor_row + 2 > current_state.num_rows:
+    #                     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                     new_lowest_free_rows[col_ix] = anchor_row + 1
+    #                     new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 2
+    #                     new_representation = current_state.representation.copy()
+    #                     new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
+    #                     new_representation[anchor_row + 1, (col_ix + 1):(col_ix + 3)] = 1
+    #                     new_state = state.State(new_representation,
+    #                                             new_lowest_free_rows,
+    #                                             # np.arange(col_ix, col_ix + 3, 1, np.int64),
+    #                                             np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+    #                                             np.array([2], dtype=np.int64),
+    #                                             0.5,
+    #                                             self.num_features,
+    #                                             self.feature_type,
+    #                                             False)
+    #
+    #                     # current_state.col_transitions_per_col,
+    #                     # current_state.row_transitions_per_col,
+    #                     # current_state.array_of_rows_with_holes,
+    #                     # current_state.holes_per_col,
+    #                     # current_state.hole_depths_per_col,
+    #                     # current_state.cumulative_wells_per_col)
+    #                     after_states.append(new_state)
+    #     elif self.current_tetromino == 3:
+    #         # SNAKEL
+    #         # Vertical placements
+    #         max_col_index = self.num_columns - 1
+    #         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 1)
+    #             if not anchor_row + 3 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix] = anchor_row + 2
+    #                 new_lowest_free_rows[col_ix + 1] = anchor_row + 3
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[anchor_row:(anchor_row + 2), col_ix] = 1
+    #                 new_representation[(anchor_row + 1):(anchor_row + 3), col_ix + 1] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         # np.arange(col_ix, col_ix + 2, 1, np.int64),
+    #                                         np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+    #                                         np.array([1, 2], dtype=np.int64),
+    #                                         1,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #
+    #                 # current_state.col_transitions_per_col,
+    #                 # current_state.row_transitions_per_col,
+    #                 # current_state.array_of_rows_with_holes,
+    #                 # current_state.holes_per_col,
+    #                 # current_state.hole_depths_per_col,
+    #                 # current_state.cumulative_wells_per_col)
+    #                 after_states.append(new_state)
+    #
+    #             ## Horizontal placements
+    #             # max_col_index = self.num_columns - 2
+    #             # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #             if col_ix < self.num_columns - 2:
+    #                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1,
+    #                                         np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]))
+    #                 if not anchor_row + 2 > current_state.num_rows:
+    #                     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                     new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 2
+    #                     new_lowest_free_rows[col_ix + 2] = anchor_row + 1
+    #                     new_representation = current_state.representation.copy()
+    #                     new_representation[anchor_row, (col_ix + 1):(col_ix + 3)] = 1
+    #                     new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
+    #                     new_state = state.State(new_representation,
+    #                                             new_lowest_free_rows,
+    #                                             # np.arange(col_ix, col_ix + 3, 1, np.int64),
+    #                                             np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+    #                                             np.array([2], dtype=np.int64),
+    #                                             0.5,
+    #                                             self.num_features,
+    #                                             self.feature_type,
+    #                                             False)
+    #
+    #                     # current_state.col_transitions_per_col,
+    #                     # current_state.row_transitions_per_col,
+    #                     # current_state.array_of_rows_with_holes,
+    #                     # current_state.holes_per_col,
+    #                     # current_state.hole_depths_per_col,
+    #                     # current_state.cumulative_wells_per_col)
+    #                     after_states.append(new_state)
+    #     elif self.current_tetromino == 4:
+    #         # T
+    #
+    #         # Vertical placements.
+    #         max_col_index = self.num_columns - 1
+    #         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #             # Single cell on left
+    #             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1, current_state.lowest_free_rows[col_ix + 1])
+    #             if not anchor_row + 3 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix] = anchor_row + 2
+    #                 new_lowest_free_rows[col_ix + 1] = anchor_row + 3
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[anchor_row + 1, col_ix] = 1
+    #                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         # np.arange(col_ix, col_ix + 2, 1, np.int64),
+    #                                         np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+    #                                         np.array([1, 2], dtype=np.int64),
+    #                                         1,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #
+    #                 # current_state.col_transitions_per_col,
+    #                 # current_state.row_transitions_per_col,
+    #                 # current_state.array_of_rows_with_holes,
+    #                 # current_state.holes_per_col,
+    #                 # current_state.hole_depths_per_col,
+    #                 # current_state.cumulative_wells_per_col)
+    #                 after_states.append(new_state)
+    #
+    #             # Single cell on right
+    #             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 1)
+    #             if not anchor_row + 3 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix] = anchor_row + 3
+    #                 new_lowest_free_rows[col_ix + 1] = anchor_row + 2
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
+    #                 new_representation[anchor_row + 1, col_ix + 1] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         # np.arange(col_ix, col_ix + 2, 1, np.int64),
+    #                                         np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+    #                                         np.array([1, 2], dtype=np.int64),
+    #                                         1,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #
+    #                 # current_state.col_transitions_per_col,
+    #                 # current_state.row_transitions_per_col,
+    #                 # current_state.array_of_rows_with_holes,
+    #                 # current_state.holes_per_col,
+    #                 # current_state.hole_depths_per_col,
+    #                 # current_state.cumulative_wells_per_col)
+    #                 after_states.append(new_state)
+    #
+    #             if col_ix < self.num_columns - 2:
+    #                 # Horizontal placements
+    #                 # max_col_index = self.num_columns - 2
+    #                 # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #                 # upside-down T
+    #                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
+    #                 if not anchor_row + 2 > current_state.num_rows:
+    #                     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                     # new_lowest_free_rows[[col_ix, col_ix + 2]] = anchor_row + 1
+    #                     new_lowest_free_rows[col_ix] = anchor_row + 1
+    #                     new_lowest_free_rows[col_ix + 2] = anchor_row + 1
+    #                     new_lowest_free_rows[col_ix + 1] = anchor_row + 2
+    #                     new_representation = current_state.representation.copy()
+    #                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
+    #                     new_representation[anchor_row + 1, col_ix + 1] = 1
+    #                     new_state = state.State(new_representation,
+    #                                             new_lowest_free_rows,
+    #                                             # np.arange(col_ix, col_ix + 3, 1, np.int64),
+    #                                             np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+    #                                             np.array([3], dtype=np.int64),
+    #                                             0.5,
+    #                                             self.num_features,
+    #                                             self.feature_type,
+    #                                             False)
+    #
+    #                     # current_state.col_transitions_per_col,
+    #                     # current_state.row_transitions_per_col,
+    #                     # current_state.array_of_rows_with_holes,
+    #                     # current_state.holes_per_col,
+    #                     # current_state.hole_depths_per_col,
+    #                     # current_state.cumulative_wells_per_col)
+    #                     after_states.append(new_state)
+    #
+    #                 # T
+    #                 # anchor_row = np.maximum(current_state.lowest_free_rows[col_ix + 1], np.max(current_state.lowest_free_rows[[col_ix, col_ix + 2]]) - 1)
+    #                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix + 1],
+    #                                         np.maximum(current_state.lowest_free_rows[col_ix],
+    #                                                    current_state.lowest_free_rows[col_ix + 2]) - 1)
+    #                 if not anchor_row + 2 > current_state.num_rows:
+    #                     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                     new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
+    #                     new_representation = current_state.representation.copy()
+    #                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
+    #                     new_representation[anchor_row, col_ix + 1] = 1
+    #                     new_state = state.State(new_representation,
+    #                                             new_lowest_free_rows,
+    #                                             # np.arange(col_ix, col_ix + 3, 1, np.int64),
+    #                                             np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+    #                                             np.array([1, 3], dtype=np.int64),
+    #                                             0.5,
+    #                                             self.num_features,
+    #                                             self.feature_type,
+    #                                             False)
+    #
+    #                     # current_state.col_transitions_per_col,
+    #                     # current_state.row_transitions_per_col,
+    #                     # current_state.array_of_rows_with_holes,
+    #                     # current_state.holes_per_col,
+    #                     # current_state.hole_depths_per_col,
+    #                     # current_state.cumulative_wells_per_col)
+    #                     after_states.append(new_state)
+    #     elif self.current_tetromino == 5:
+    #         # RCorner
+    #
+    #         # Vertical placements.
+    #         max_col_index = self.num_columns - 1
+    #         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #             # Top-right corner
+    #             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 2, current_state.lowest_free_rows[col_ix + 1])
+    #             if not anchor_row + 3 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[anchor_row + 2, col_ix] = 1
+    #                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         # np.arange(col_ix, col_ix + 2, 1, np.int64),
+    #                                         np.arange(anchor_row, anchor_row + 3, 1, np.int64),
+    #                                         np.array([1, 1, 2], dtype=np.int64),
+    #                                         1,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #
+    #                 # current_state.col_transitions_per_col,
+    #                 # current_state.row_transitions_per_col,
+    #                 # current_state.array_of_rows_with_holes,
+    #                 # current_state.holes_per_col,
+    #                 # current_state.hole_depths_per_col,
+    #                 # current_state.cumulative_wells_per_col)
+    #                 after_states.append(new_state)
+    #
+    #             # Bottom-left corner
+    #             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
+    #             if not anchor_row + 3 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix] = anchor_row + 3
+    #                 new_lowest_free_rows[col_ix + 1] = anchor_row + 1
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
+    #                 new_representation[anchor_row, col_ix + 1] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         # np.arange(col_ix, col_ix + 2, 1, np.int64),
+    #                                         np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+    #                                         np.array([2], dtype=np.int64),
+    #                                         1,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #
+    #                 # current_state.col_transitions_per_col,
+    #                 # current_state.row_transitions_per_col,
+    #                 # current_state.array_of_rows_with_holes,
+    #                 # current_state.holes_per_col,
+    #                 # current_state.hole_depths_per_col,
+    #                 # current_state.cumulative_wells_per_col)
+    #                 after_states.append(new_state)
+    #
+    #             if col_ix < self.num_columns - 2:
+    #                 # Horizontal placements
+    #                 # max_col_index = self.num_columns - 2
+    #                 # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #                 # Bottom-right corner
+    #                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
+    #                 if not anchor_row + 2 > current_state.num_rows:
+    #                     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                     new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1
+    #                     new_lowest_free_rows[col_ix + 2] = anchor_row + 2
+    #                     new_representation = current_state.representation.copy()
+    #                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
+    #                     new_representation[anchor_row + 1, col_ix + 2] = 1
+    #                     new_state = state.State(new_representation,
+    #                                             new_lowest_free_rows,
+    #                                             # np.arange(col_ix, col_ix + 3, 1, np.int64),
+    #                                             np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+    #                                             np.array([3], dtype=np.int64),
+    #                                             0.5,
+    #                                             self.num_features,
+    #                                             self.feature_type,
+    #                                             False)
+    #                     after_states.append(new_state)
+    #
+    #                 # Top-left corner
+    #                 anchor_row = np.maximum(current_state.lowest_free_rows[col_ix],
+    #                                         np.max(current_state.lowest_free_rows[(col_ix + 1):(col_ix + 3)]) - 1)
+    #                 if not anchor_row + 2 > current_state.num_rows:
+    #                     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                     new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
+    #                     new_representation = current_state.representation.copy()
+    #                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
+    #                     new_representation[anchor_row, col_ix] = 1
+    #                     new_state = state.State(new_representation,
+    #                                             new_lowest_free_rows,
+    #                                             # np.arange(col_ix, col_ix + 3, 1, np.int64),
+    #                                             np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+    #                                             np.array([1, 3], dtype=np.int64),
+    #                                             0.5,
+    #                                             self.num_features,
+    #                                             self.feature_type,
+    #                                             False)
+    #                     after_states.append(new_state)
+    #
+    #     elif self.current_tetromino == 6:
+    #         # LCorner
+    #         # Vertical placements. 'height' becomes 'width' :)
+    #         max_col_index = self.num_columns - 1
+    #         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #             # Top-left corner
+    #             anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 2)
+    #             if not anchor_row + 3 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 3
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[anchor_row + 2, col_ix + 1] = 1
+    #                 new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         # np.arange(col_ix, col_ix + 2, 1, np.int64),
+    #                                         np.arange(anchor_row, anchor_row + 3, 1, np.int64),
+    #                                         np.array([1, 1, 2], dtype=np.int64),
+    #                                         1,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #
+    #                 # current_state.col_transitions_per_col,
+    #                 # current_state.row_transitions_per_col,
+    #                 # current_state.array_of_rows_with_holes,
+    #                 # current_state.holes_per_col,
+    #                 # current_state.hole_depths_per_col,
+    #                 # current_state.cumulative_wells_per_col)
+    #                 after_states.append(new_state)
+    #
+    #             # Bottom-right corner
+    #             anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
+    #             if not anchor_row + 3 > current_state.num_rows:
+    #                 new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                 new_lowest_free_rows[col_ix + 1] = anchor_row + 3
+    #                 new_lowest_free_rows[col_ix] = anchor_row + 1
+    #                 new_representation = current_state.representation.copy()
+    #                 new_representation[anchor_row:(anchor_row + 3), col_ix + 1] = 1
+    #                 new_representation[anchor_row, col_ix] = 1
+    #                 new_state = state.State(new_representation,
+    #                                         new_lowest_free_rows,
+    #                                         # np.arange(col_ix, col_ix + 2, 1, np.int64),
+    #                                         np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+    #                                         np.array([2], dtype=np.int64),
+    #                                         1,
+    #                                         self.num_features,
+    #                                         self.feature_type,
+    #                                         False)
+    #
+    #                 # current_state.col_transitions_per_col,
+    #                 # current_state.row_transitions_per_col,
+    #                 # current_state.array_of_rows_with_holes,
+    #                 # current_state.holes_per_col,
+    #                 # current_state.hole_depths_per_col,
+    #                 # current_state.cumulative_wells_per_col)
+    #                 after_states.append(new_state)
+    #
+    #             if col_ix < self.num_columns - 2:
+    #
+    #                 # max_col_index = self.num_columns - 2
+    #                 # for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+    #                 # Bottom-left corner (= 'hole' in top-right corner)
+    #                 anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
+    #                 if not anchor_row + 2 > current_state.num_rows:
+    #                     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                     new_lowest_free_rows[col_ix] = anchor_row + 2
+    #                     new_lowest_free_rows[(col_ix + 1):(col_ix + 3)] = anchor_row + 1
+    #                     new_representation = current_state.representation.copy()
+    #                     new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
+    #                     new_representation[anchor_row + 1, col_ix] = 1
+    #                     new_state = state.State(new_representation,
+    #                                             new_lowest_free_rows,
+    #                                             # np.arange(col_ix, col_ix + 3, 1, np.int64),
+    #                                             np.arange(anchor_row, anchor_row + 1, 1, np.int64),
+    #                                             np.array([3], dtype=np.int64),
+    #                                             0.5,
+    #                                             self.num_features,
+    #                                             self.feature_type,
+    #                                             False)
+    #                     # current_state.col_transitions_per_col,
+    #                     # current_state.row_transitions_per_col,
+    #                     # current_state.array_of_rows_with_holes,
+    #                     # current_state.holes_per_col,
+    #                     # current_state.hole_depths_per_col,
+    #                     # current_state.cumulative_wells_per_col)
+    #                     after_states.append(new_state)
+    #
+    #                 # Top-right corner
+    #                 anchor_row = np.maximum(np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)]) - 1,
+    #                                         current_state.lowest_free_rows[col_ix + 2])
+    #                 if not anchor_row + 2 > current_state.num_rows:
+    #                     new_lowest_free_rows = current_state.lowest_free_rows.copy()
+    #                     new_lowest_free_rows[col_ix: (col_ix + 3)] = anchor_row + 2
+    #                     new_representation = current_state.representation.copy()
+    #                     new_representation[anchor_row + 1, col_ix:(col_ix + 3)] = 1
+    #                     new_representation[anchor_row, col_ix + 2] = 1
+    #                     new_state = state.State(new_representation,
+    #                                             new_lowest_free_rows,
+    #                                             # np.arange(col_ix, col_ix + 3, 1, np.int64),
+    #                                             np.arange(anchor_row, anchor_row + 2, 1, np.int64),
+    #                                             np.array([1, 3], dtype=np.int64),
+    #                                             0.5,
+    #                                             self.num_features,
+    #                                             self.feature_type,
+    #                                             False)
+    #
+    #                     # current_state.col_transitions_per_col,
+    #                     # current_state.row_transitions_per_col,
+    #                     # current_state.array_of_rows_with_holes,
+    #                     # current_state.holes_per_col,
+    #                     # current_state.hole_depths_per_col,
+    #                     # current_state.cumulative_wells_per_col)
+    #                     after_states.append(new_state)
+    #     else:
+    #         raise ValueError("wrong current tetromino!")
+    #
+    #     return after_states
 
