@@ -4,23 +4,23 @@ import numba
 from numba import jitclass, bool_, int64
 
 
-specTetris = [
-    ('num_columns', int64),
-    ('num_rows', int64),
-    ('vebose', bool_),
-    ('tetromino_size', int64),
-    ('feature_type', numba.types.string),
-    ('num_features', int64),
-    ('max_cleared_test_lines', int64),
-    ('game_over', bool_),
-    ('current_state', state.State.class_type.instance_type),
-    ('tetromino_handler', tetromino.Tetromino.class_type.instance_type),
-    ('cleared_lines', int64),
-    ('cumulative_steps', int64)
-]
+# specTetris = [
+#     ('num_columns', int64),
+#     ('num_rows', int64),
+#     ('vebose', bool_),
+#     ('tetromino_size', int64),
+#     ('feature_type', numba.types.string),
+#     ('num_features', int64),
+#     ('max_cleared_test_lines', int64),
+#     ('game_over', bool_),
+#     ('current_state', state.State.class_type.instance_type),
+#     ('tetromino_handler', tetromino.Tetromino.class_type.instance_type),
+#     ('cleared_lines', int64),
+#     ('cumulative_steps', int64)
+# ]
 
 
-@jitclass(specTetris)
+# @jitclass(specTetris)
 class Tetris:
     """
     Tetris for reinforcement learning applications.
@@ -65,7 +65,8 @@ class Tetris:
                                          0.0,  # landing_height_bonus=
                                          self.num_features,  # num_features=
                                          "bcts",  # feature_type=
-                                         False  # terminal_state=
+                                         False,  # terminal_state=
+                                         False  # has_overlapping_fields=
                                          )
         self.tetromino_handler = tetromino.Tetromino(self.feature_type, self.num_features, self.num_columns)
         self.cleared_lines = 0
@@ -80,7 +81,8 @@ class Tetris:
                                          0.0,  # landing_height_bonus=
                                          self.num_features,  # num_features=
                                          "bcts",  # feature_type=
-                                         False  # terminal_state=
+                                         False,  # terminal_state=
+                                         False  # has_overlapping_fields=
                                          )
         self.current_state.calc_bcts_features()
         self.cleared_lines = 0

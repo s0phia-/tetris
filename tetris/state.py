@@ -7,7 +7,7 @@ specTerm = [
     ('terminal_state', bool_),
 ]
 
-@jitclass(specTerm)
+# @jitclass(specTerm)
 class TerminalState:
     def __init__(self):
         self.terminal_state = True
@@ -34,7 +34,7 @@ spec = [
 ]
 
 
-@jitclass(spec)
+# @jitclass(spec)
 class State(object):
     def __init__(self,
                  representation,
@@ -44,13 +44,17 @@ class State(object):
                  landing_height_bonus,  # =0.0,
                  num_features,  #=8,
                  feature_type,  #="bcts",
-                 terminal_state  # this is useful to generate a "terminal state"
+                 terminal_state,  # this is useful to generate a "terminal state"
+                 has_overlapping_fields=False
                  ):
         self.terminal_state = terminal_state
+
         if not terminal_state:
             self.representation = representation
             self.lowest_free_rows = lowest_free_rows
             self.num_rows, self.num_columns = representation.shape
+            if has_overlapping_fields:
+                self.num_rows -= 4  # representation received in this case has e.g., 14 rows (for a 10x10 board)
             self.pieces_per_changed_row = pieces_per_changed_row
             self.landing_height_bonus = landing_height_bonus
             self.num_features = num_features
@@ -58,12 +62,11 @@ class State(object):
             self.n_cleared_lines = 0  # Gets updated in self.clear_lines()
             self.anchor_row = changed_lines[0]
             self.cleared_rows_relative_to_anchor = self.clear_lines(changed_lines)
-            # # TODO: REMOVE FOR SPEED
-            # assert np.all(calc_lowest_free_rows(self.representation) == self.lowest_free_rows)
             self.features_are_calculated = False
             self.features = np.zeros(self.num_features, dtype=np.float64)
-            self.terminal_state = check_terminal(self.representation)
-            # self.value_estimate = 0.0
+            if has_overlapping_fields:
+                self.terminal_state = check_terminal(self.representation, self.num_rows)
+                self.representation = self.representation[:self.num_rows, ]
 
 
     # def __repr__(self):
@@ -399,15 +402,24 @@ class State(object):
                                   cumulative_wells, row_transitions, eroded_piece_cells, hole_depths])
 
 
+# @njit(cache=False)
+def check_terminal(representation, num_rows):
+    is_terminal = False
+    for ix in representation[num_rows]:
+        if ix:
+            is_terminal = True
+            break
+    return is_terminal
 
-@njit(fastmath=True, cache=False)
+
+# @njit(fastmath=True, cache=False)
 def numba_sum_int(int_arr):
     acc = 0
     for i in int_arr:
         acc += i
     return acc
 
-@njit(fastmath=True, cache=False)
+# @njit(fastmath=True, cache=False)
 def numba_sum(arr):
     acc = 0.
     for i in arr:
@@ -898,17 +910,7 @@ def numba_sum(arr):
     #     # assert cumulative_wells == np.sum(self.cumulative_wells_per_col)
 
 
-@njit(cache=False)
-def check_terminal(representation, num_rows):
-    is_terminal = False
-    for ix in representation[num_rows]:
-        if ix:
-            is_terminal = True
-            break
-    return is_terminal
-
-
-# @njit(fastmath=True, cache=False, debug=True)
+# # @njit(fastmath=True, cache=False, debug=True)
 # def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_columns):
 #     row_sums = np.sum(representation[changed_lines, :], axis=1)
 #     is_full = (row_sums == num_columns)
@@ -934,7 +936,7 @@ def check_terminal(representation, num_rows):
 #     return is_full, n_cleared_lines, representation, lowest_free_rows
 #
 
-# @njit(fastmath=True, cache=False)
+# # @njit(fastmath=True, cache=False)
 # def minmaxavg_jitted(x):
 #     maximum = x[0]
 #     minimum = x[0]
@@ -950,7 +952,7 @@ def check_terminal(representation, num_rows):
 #
 
 
-# @njit(fastmath=True, cache=False)
+# # @njit(fastmath=True, cache=False)
 # def calc_lowest_free_rows(rep):
 #     num_rows, n_cols = rep.shape
 #     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)

@@ -113,7 +113,7 @@ class MLearning:
             self.step_since_last = 0
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def choose_action_using_rollouts(start_state, start_tetromino,
                                  rollout_length, tetromino_handler, policy_weights,
                                  dom_filter, cumu_dom_filter, rollout_dom_filter, rollout_cumu_dom_filter,
@@ -182,7 +182,7 @@ def choose_action_using_rollouts(start_state, start_tetromino,
     return children_states[child_index], child_index, action_features
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def roll_out(start_state, rollout_length, tetromino_handler, policy_weights,
              rollout_dom_filter, rollout_cumu_dom_filter,
              feature_directors, num_features, gamma):
@@ -203,7 +203,7 @@ def roll_out(start_state, rollout_length, tetromino_handler, policy_weights,
     return value_estimate
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def choose_action_in_rollout(available_after_states, policy_weights,
                              rollout_dom_filter, rollout_cumu_dom_filter,
                              feature_directors, num_features):

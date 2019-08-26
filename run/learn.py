@@ -4,7 +4,7 @@ from numba import njit
 from agents.constant_agent import ConstantAgent
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def evaluate(env, agent, num_runs):
     # np.random.seed(1)
     rewards = np.zeros(num_runs, dtype=np.int64)

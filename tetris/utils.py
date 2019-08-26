@@ -23,21 +23,66 @@ class Bunch(object):
         self.__dict__.update(adict)
 
 
-@njit(cache=False)
+def print_board_to_string(state):
+    string = "\n"
+    for row_ix in range(state.representation.shape[0]):
+        # Start from top
+        row_ix = state.num_rows - row_ix - 1
+        string += "|"
+        for col_ix in range(state.num_columns):
+            if state.representation[row_ix, col_ix]:
+                string += "██"
+            else:
+                string += "  "
+        string += "|\n"
+    return string
+
+
+def print_tetromino(tetromino_index):
+    if tetromino_index == 0:
+        string = '''
+██ ██ ██ ██'''
+    elif tetromino_index == 1:
+        string = '''
+██ ██ 
+██ ██'''
+    elif tetromino_index == 2:
+        string = '''
+   ██ ██ 
+██ ██'''
+    elif tetromino_index == 3:
+        string ='''
+██ ██ 
+   ██ ██'''
+    elif tetromino_index == 4:
+        string ='''
+   ██
+██ ██ ██'''
+    elif tetromino_index == 5:
+        string ='''
+██ ██ ██
+██'''
+    elif tetromino_index == 6:
+        string="""
+██ ██ ██
+      ██"""
+    return string
+
+# @njit(cache=False)
 def one_hot_vector(one_index, length):
     out = np.zeros(length)
     out[one_index] = 1.
     return out
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def vert_one_hot(one_index, length):
     out = np.zeros((length, 1))
     out[one_index] = 1.
     return out
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def compute_action_probabilities(action_features, weights, temperature):
     utilities = action_features.dot(weights) / temperature
     utilities = utilities - np.max(utilities)
@@ -46,14 +91,14 @@ def compute_action_probabilities(action_features, weights, temperature):
     return probabilities
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def grad_of_log_action_probabilities(features, probabilities, action_index):
     features_of_chosen_action = features[action_index]
     grad = features_of_chosen_action - features.T.dot(probabilities)
     return grad
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def softmax(U):
     ps = np.exp(U - np.max(U))
     ps /= np.sum(ps)

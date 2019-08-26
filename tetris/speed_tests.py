@@ -7,7 +7,7 @@ def softmax(U):
     ps = np.exp(U - np.max(U))
     ps /= np.sum(ps)
     return ps
-@njit
+# @njit
 def softmax_n(U):
     ps = np.exp(U - np.max(U))
     ps /= np.sum(ps)
@@ -96,7 +96,7 @@ def f_np(after_states, agent):
 
 # weights = agent.mlp.state_dict()['0.weight'].numpy()[0]
 
-# @njit
+# # @njit
 # def f_nb(after_states, weights):
 #     values = np.zeros(len(after_states), dtype=np.float_)
 #     for ix, after_state in enumerate(after_states):
