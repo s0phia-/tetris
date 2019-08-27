@@ -97,7 +97,8 @@ class MLearning:
         """
         Learns new policy weights from choice set data.
         """
-        delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or (self.delete_oldest_data_point_every > 0 and self.step % self.delete_oldest_data_point_every == 0 and self.step > self.learn_from_step)
+        delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or \
+                (self.delete_oldest_data_point_every > 0 and self.step % self.delete_oldest_data_point_every == 0 and self.step > self.learn_from_step)
         self.mlogit_data.push(features=action_features, choice_index=action_index, delete_oldest=delete_oldest)
         self.step_since_last += 1
         if self.step >= self.learn_from_step and (self.step <= self.learn_every_step_until or self.step_since_last >= self.learn_periodicity):
@@ -109,6 +110,7 @@ class MLearning:
                 self.policy_weights = self.model.fit(data=self.mlogit_data.sample(), lam=0, standardize=False)
             elif self.regularization in ["ridge", "stew"]:
                 self.policy_weights, _ = self.model.cv_fit(data=self.mlogit_data.sample())
+            self.policy_weights = np.ascontiguousarray(self.policy_weights)
             print("Learning took: " + str(time.time() - learning_time_start) + " seconds.")
             self.step_since_last = 0
 
@@ -133,32 +135,6 @@ def choose_action_using_rollouts(start_state, start_tetromino,
         not_simply_dominated, not_cumu_dominated = dominance_filter(action_features, len_after_states=num_children)  # domtools.
 
     child_total_values = np.zeros(num_children)
-
-    # if cumu_dom_filter:
-    #     for child in range(num_children):
-    #         if not_cumu_dominated[child]:
-    #             for rollout_ix in range(number_of_rollouts_per_child):
-    #                 child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler, policy_weights,
-    #                                                       rollout_dom_filter, rollout_cumu_dom_filter,
-    #                                                       feature_directors, num_features, gamma)
-    #         else:
-    #             child_total_values[child] = -np.inf
-    # elif dom_filter:
-    #     for child in range(num_children):
-    #         if not_simply_dominated[child]:
-    #             for rollout_ix in range(number_of_rollouts_per_child):
-    #                 child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler, policy_weights,
-    #                                                       rollout_dom_filter, rollout_cumu_dom_filter,
-    #                                                       feature_directors, num_features, gamma)
-    #         else:
-    #             child_total_values[child] = -np.inf
-    # else:
-    #     for child in range(num_children):
-    #         for rollout_ix in range(number_of_rollouts_per_child):
-    #             child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler, policy_weights,
-    #                                                   rollout_dom_filter, rollout_cumu_dom_filter,
-    #                                                   feature_directors, num_features, gamma)
-
     for child in range(num_children):
         do_rollout = False
         if cumu_dom_filter:
@@ -172,8 +148,8 @@ def choose_action_using_rollouts(start_state, start_tetromino,
 
         if do_rollout:
             for rollout_ix in range(number_of_rollouts_per_child):
-                child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler, policy_weights,
-                                                      rollout_dom_filter, rollout_cumu_dom_filter,
+                child_total_values[child] += roll_out(children_states[child], rollout_length, tetromino_handler,
+                                                      policy_weights, rollout_dom_filter, rollout_cumu_dom_filter,
                                                       feature_directors, num_features, gamma)
         else:
             child_total_values[child] = -np.inf
@@ -221,8 +197,130 @@ def choose_action_in_rollout(available_after_states, policy_weights,
             map_back_vector = np.nonzero(not_simply_dominated)[0]
     else:
         map_back_vector = np.arange(num_states)
-    utilities = action_features.dot(np.ascontiguousarray(policy_weights))
+    utilities = action_features.dot(policy_weights)
     move_index = np.argmax(utilities)
     move = available_after_states[map_back_vector[move_index]]
     return move
+
+
+
+class HierarchicalLearning(MLearning):
+    def __init__(self,
+                 phase_names,
+                 regularization,
+                 dom_filter_per_phase,
+                 cumu_dom_filter_per_phase,
+                 rollout_dom_filter_per_phase,
+                 rollout_cumu_dom_filter_per_phase,
+                 lambda_min,
+                 lambda_max,
+                 num_lambdas,
+                 gamma,
+                 rollout_length,
+                 number_of_rollouts_per_child,
+                 learn_every_step_until,
+                 max_batch_size,
+                 learn_periodicity,
+                 increase_learn_periodicity,
+                 learn_from_step,
+                 num_columns,
+                 feature_type="bcts",
+                 verbose=False,
+                 verbose_stew=False):
+        self.phase_names = phase_names
+        self.num_phases = len(self.phase_names)
+        self.current_phase_index = 0
+        self.current_phase = self.phase_names[self.current_phase_index]
+        self.step_in_new_phase = 0
+        self.rollout_mechanism = self.determine_rollout_mechanism()
+
+        self.dom_filter_per_phase = dom_filter_per_phase
+        self.cumu_dom_filter_per_phase = cumu_dom_filter_per_phase
+        self.rollout_dom_filter_per_phase = rollout_dom_filter_per_phase
+        self.rollout_cumu_dom_filter_per_phase = rollout_cumu_dom_filter_per_phase
+
+        if self.current_phase == "learn_weights" and feature_type == "bcts":
+            self.feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1])
+        elif self.current_phase == "learn_directions" and feature_type == "bcts":
+            self.feature_directors = (np.random.binomial(1, 0.5, 8) - 0.5) * 2
+        else:
+            raise ValueError("Only bcts features are implemented.")
+
+        self.check_arguments(regularization)
+
+        super().__init__(regularization, dom_filter_per_phase[0], cumu_dom_filter_per_phase[0], rollout_dom_filter_per_phase[0],
+                         rollout_cumu_dom_filter_per_phase[0], lambda_min, lambda_max, num_lambdas, gamma, rollout_length,
+                         number_of_rollouts_per_child, learn_every_step_until, max_batch_size, learn_periodicity,
+                         increase_learn_periodicity, learn_from_step, num_columns, self.feature_directors, feature_type,
+                         verbose, verbose_stew)
+
+        self.positive_direction_counts = np.zeros(self.num_features)
+        self.meaningful_comparisons = np.zeros(self.num_features)
+        self.learned_directions = np.zeros(self.num_features)
+
+    def check_arguments(self, regularization):
+        assert regularization in ["no_regularization", "nonnegative", "ridge", "stew"]
+        assert np.all(self.phase_names in np.array(["learn_directions", "learn_order", "learn_weights"]))
+        assert len(self.dom_filter_per_phase) == self.num_phases
+        assert len(self.cumu_dom_filter_per_phase) == self.num_phases
+        assert len(self.rollout_dom_filter_per_phase) == self.num_phases
+        assert len(self.rollout_cumu_dom_filter_per_phase) == self.num_phases
+
+    def determine_rollout_mechanism(self):
+        """
+        Deterministic mapping from phase to rollout mechanism. Later this can be made a parameter.
+        :return: string, the rollout mechanism
+        """
+        if self.current_phase == "learn_directions":
+            return "greedy_if_reward_else_random"
+        elif self.current_phase == "learn_weights":
+            return "max_util"
+
+    def choose_action(self, start_state, start_tetromino):
+        if self.rollout_mechanism == "max_util":
+            return choose_action_using_rollouts(start_state, start_tetromino,
+                                                self.rollout_length, self.tetromino_handler, self.policy_weights,
+                                                self.dom_filter, self.cumu_dom_filter, self.rollout_dom_filter, self.rollout_cumu_dom_filter,
+                                                self.feature_directors, self.num_features, self.gamma,
+                                                self.number_of_rollouts_per_child)
+        elif self.rollout_mechanism == "greedy_if_reward_else_random":
+            return choose_action_using_rollouts(start_state, start_tetromino,
+                                                self.rollout_length, self.tetromino_handler, self.policy_weights,
+                                                self.dom_filter, self.cumu_dom_filter, self.rollout_dom_filter,
+                                                self.rollout_cumu_dom_filter,
+                                                self.feature_directors, self.num_features, self.gamma,
+                                                self.number_of_rollouts_per_child)
+
+    def learn(self, action_features, action_index):
+        if self.phase in ["learn_directions", "learn_order"]:  # self.phase == "learn_directions"
+            chosen_action_features = action_features[action_index]
+            remaining_action_features = np.delete(arr=action_features, obj=action_index, axis=0)
+            feature_differences = np.sign(chosen_action_features - remaining_action_features)
+            direction_counts = np.sign(np.sum(feature_differences, axis=0))
+            self.positive_direction_counts += np.maximum(direction_counts, 0)
+            self.meaningful_comparisons += np.abs(direction_counts)
+            self.mlogit_data.push(features=action_features, choice_index=action_index, delete_oldest=False)
+        elif self.phase in ["learn_weights", "optimize_weights"]:
+            delete_oldest = self.mlogit_data.current_number_of_choice_sets > self.max_batch_size or \
+                            (
+                                        self.delete_oldest_data_point_every > 0 and self.step % self.delete_oldest_data_point_every == 0 and self.step > self.learn_from_step)
+            self.mlogit_data.push(features=action_features, choice_index=action_index, delete_oldest=delete_oldest)
+            self.step_since_last += 1
+            if self.step >= self.learn_from_step and (
+                    self.step <= self.learn_every_step_until or self.step_since_last >= self.learn_periodicity):
+                self.learn_periodicity += self.increase_learn_periodicity
+                print("self.learn_periodicity", self.learn_periodicity)
+                print("Learning features")
+                learning_time_start = time.time()
+                if self.regularization in ["no_regularization", "nonnegative"]:
+                    self.policy_weights = self.model.fit(data=self.mlogit_data.sample(), lam=0, standardize=False)
+                elif self.regularization in ["ridge", "stew"]:
+                    self.policy_weights, _ = self.model.cv_fit(data=self.mlogit_data.sample())
+                print("Learning took: " + str(time.time() - learning_time_start) + " seconds.")
+                self.step_since_last = 0
+        switched_phase = self.check_phase()
+        return switched_phase
+
+
+
 

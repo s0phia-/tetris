@@ -1,5 +1,5 @@
 from tetris import game
-from agents import hierarchical_learning
+from agents import hierarchical_learning_old
 from tetris.utils import plot_individual_agent, plot_analysis
 import numpy as np
 import random
@@ -12,38 +12,38 @@ def p_loop(p, seed, plot_individual=False, return_action_count=False):
     np.random.seed(seed + p.seed)
     # torch.manual_seed(seed)
 
-    player = hierarchical_learning.HierarchicalLearner(start_phase_ix=p.start_phase_ix, feature_type=p.feature_type,
-                                                       num_columns=p.num_columns,
-                                                       verbose=p.verbose, verbose_stew=p.verbose_stew,
-                                                       learn_from_step_phases=p.learn_from_step_phases,
-                                                       number_of_rollouts_per_child_phases=p.number_of_rollouts_per_child_phases,
-                                                       delete_oldest_data_point_every_phases=p.delete_oldest_data_point_every_phases,
-                                                       lambda_min=p.lambda_min,
-                                                       lambda_max=p.lambda_max,
-                                                       num_lambdas=p.num_lambdas,
-                                                       gamma_phases=p.gamma_phases,
-                                                       rollout_length_phases=p.rollout_length_phases,
-                                                       rollout_action_selection_phases=p.rollout_action_selection_phases,
-                                                       max_length_phases=p.max_length_phases,
-                                                       dom_filter_phases=p.dom_filter_phases,
-                                                       cumu_dom_filter_phases=p.cumu_dom_filter_phases,
-                                                       rollout_dom_filter_phases=p.rollout_dom_filter_phases,
-                                                       rollout_cumu_dom_filter_phases=p.rollout_cumu_dom_filter_phases,
-                                                       filter_best_phases=p.filter_best_phases,
-                                                       ols_phases=p.ols_phases,
-                                                       feature_directors=p.feature_directors,
-                                                       standardize_features=p.standardize_features,
-                                                       max_batch_size=p.max_batch_size,
-                                                       learn_every_after=p.learn_every_after,
-                                                       learn_every_step_until=p.learn_every_step_until,
-                                                       ew=p.ew,
-                                                       ttb=p.ttb,
-                                                       stnw=p.stnw,
-                                                       random_init_weights=p.random_init_weights,
-                                                       do_sgd_update=p.do_sgd_update,
-                                                       ridge=p.ridge,
-                                                       one_se_rule=p.one_se_rule,
-                                                       nonnegative=p.nonnegative)
+    player = hierarchical_learning_old.HierarchicalLearner(start_phase_ix=p.start_phase_ix, feature_type=p.feature_type,
+                                                           num_columns=p.num_columns,
+                                                           verbose=p.verbose, verbose_stew=p.verbose_stew,
+                                                           learn_from_step_phases=p.learn_from_step_phases,
+                                                           number_of_rollouts_per_child_phases=p.number_of_rollouts_per_child_phases,
+                                                           delete_oldest_data_point_every_phases=p.delete_oldest_data_point_every_phases,
+                                                           lambda_min=p.lambda_min,
+                                                           lambda_max=p.lambda_max,
+                                                           num_lambdas=p.num_lambdas,
+                                                           gamma_phases=p.gamma_phases,
+                                                           rollout_length_phases=p.rollout_length_phases,
+                                                           rollout_action_selection_phases=p.rollout_action_selection_phases,
+                                                           max_length_phases=p.max_length_phases,
+                                                           dom_filter_phases=p.dom_filter_phases,
+                                                           cumu_dom_filter_phases=p.cumu_dom_filter_phases,
+                                                           rollout_dom_filter_phases=p.rollout_dom_filter_phases,
+                                                           rollout_cumu_dom_filter_phases=p.rollout_cumu_dom_filter_phases,
+                                                           filter_best_phases=p.filter_best_phases,
+                                                           ols_phases=p.ols_phases,
+                                                           feature_directors=p.feature_directors,
+                                                           standardize_features=p.standardize_features,
+                                                           max_batch_size=p.max_batch_size,
+                                                           learn_every_after=p.learn_every_after,
+                                                           learn_every_step_until=p.learn_every_step_until,
+                                                           ew=p.ew,
+                                                           ttb=p.ttb,
+                                                           stnw=p.stnw,
+                                                           random_init_weights=p.random_init_weights,
+                                                           do_sgd_update=p.do_sgd_update,
+                                                           ridge=p.ridge,
+                                                           one_se_rule=p.one_se_rule,
+                                                           nonnegative=p.nonnegative)
 
     environment = game.Tetris(num_columns=p.num_columns, num_rows=p.num_rows, agent=player, verbose=p.verbose)
     test_environment = game.Tetris(num_columns=p.num_columns, num_rows=p.num_rows, agent=player, verbose=False,
@@ -85,18 +85,18 @@ def p_loop(p, seed, plot_individual=False, return_action_count=False):
 def cbmpi_loop(p, seed, D):
     random.seed(seed * p.seed)
     np.random.seed(seed * p.seed)
-    player = hierarchical_learning.Cbmpi(m=p.m,
-                                         N=p.N,
-                                         M=p.M,
-                                         D=D,
-                                         B=p.B,
-                                         feature_type=p.feature_type,
-                                         num_columns=p.num_columns,
-                                         cmaes_var=p.cmaes_var,
-                                         verbose=p.verbose,
-                                         seed=seed,
-                                         id=p.seed,
-                                         discrete_choice=p.discrete_choice)
+    player = hierarchical_learning_old.Cbmpi(m=p.m,
+                                             N=p.N,
+                                             M=p.M,
+                                             D=D,
+                                             B=p.B,
+                                             feature_type=p.feature_type,
+                                             num_columns=p.num_columns,
+                                             cmaes_var=p.cmaes_var,
+                                             verbose=p.verbose,
+                                             seed=seed,
+                                             id=p.seed,
+                                             discrete_choice=p.discrete_choice)
 
     environment = game.Tetris(num_columns=p.num_columns, num_rows=p.num_rows, agent=player, verbose=p.verbose)
     test_environment = game.Tetris(num_columns=p.num_columns, num_rows=p.num_rows, agent=player, verbose=p.verbose,
@@ -118,17 +118,17 @@ def cbmpi_loop(p, seed, D):
 def cbmpi_learn_loop(p, seed, D):
     random.seed(seed * p.seed)
     np.random.seed(seed * p.seed)
-    player = hierarchical_learning.Cbmpi(m=p.m,
-                                         N=p.N,
-                                         M=p.M,
-                                         D=D,
-                                         B=p.B,
-                                         feature_type=p.feature_type,
-                                         num_columns=p.num_columns,
-                                         cmaes_var=p.cmaes_var,
-                                         verbose=p.verbose,
-                                         seed=seed,
-                                         id=p.seed)
+    player = hierarchical_learning_old.Cbmpi(m=p.m,
+                                             N=p.N,
+                                             M=p.M,
+                                             D=D,
+                                             B=p.B,
+                                             feature_type=p.feature_type,
+                                             num_columns=p.num_columns,
+                                             cmaes_var=p.cmaes_var,
+                                             verbose=p.verbose,
+                                             seed=seed,
+                                             id=p.seed)
 
     environment = game.Tetris(num_columns=p.num_columns, num_rows=p.num_rows, agent=player, verbose=p.verbose)
 

@@ -20,21 +20,21 @@ def calc_lowest_free_rows(rep):
 
 
 representation = np.array([[1, 0, 1, 0, 0, 1, 0, 1, 1, 1],
-               [0, 0, 0, 1, 1, 1, 0, 1, 1, 1],
-               [1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
-               [0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-               [0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-               [0, 1, 0, 1, 1, 1, 1, 1, 1, 1],
-               [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-               [1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-               [1, 1, 0, 1, 1, 1, 1, 1, 1, 1],
-               [0, 0, 0, 0, 0, 0, 1, 0, 1, 1]])
+                           [0, 0, 0, 1, 1, 1, 0, 1, 1, 1],
+                           [1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
+                           [0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+                           [0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+                           [0, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+                           [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+                           [1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+                           [1, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 0, 0, 1, 0, 1, 1]])
 
 
 lowest_free_rows = calc_lowest_free_rows(representation)
 
 st = state.State(representation=representation, lowest_free_rows=lowest_free_rows,
-            changed_lines=np.array([0], dtype=np.int64),
+                 changed_lines=np.array([0], dtype=np.int64),
                  pieces_per_changed_row=np.array([0], dtype=np.int64),
                  landing_height_bonus=0.0,
                  num_features=8,
@@ -49,3 +49,4 @@ print(print_tetromino(tet.current_tetromino))
 
 af_st = tet.get_after_states(st)
 print(print_board_to_string(af_st[0]))
+
