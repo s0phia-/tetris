@@ -144,6 +144,7 @@ class HierarchicalLearning(MLearning):
                  lambda_max,
                  num_lambdas,
                  gamma_per_phase,
+                 append_data_per_phase,
                  rollout_length,
                  number_of_rollouts_per_child,
                  learn_every_step_until,
@@ -168,6 +169,8 @@ class HierarchicalLearning(MLearning):
         self.rollout_dom_filter_per_phase = rollout_dom_filter_per_phase
         self.rollout_cumu_dom_filter_per_phase = rollout_cumu_dom_filter_per_phase
         self.gamma_per_phase = gamma_per_phase
+        self.append_data_per_phase = append_data_per_phase
+        self._append_data = self.append_data_per_phase[0]
         self.rollout_mechanism_per_phase = rollout_mechanism_per_phase
         # self.rollout_mechanism = self.determine_rollout_mechanism()
         self.rollout_mechanism = self.rollout_mechanism_per_phase[0]
@@ -203,6 +206,7 @@ class HierarchicalLearning(MLearning):
         assert len(self.rollout_cumu_dom_filter_per_phase) == self.num_phases
         assert len(self.rollout_mechanism_per_phase) == self.num_phases
         assert len(self.gamma_per_phase) == self.num_phases
+        assert len(self.append_data_per_phase) == self.num_phases
 
     def copy_current_feature_directors(self):
         if self.current_phase == "learn_directions":
@@ -211,8 +215,10 @@ class HierarchicalLearning(MLearning):
             return self.feature_directors.copy()
 
     def append_data(self, action_features, action_index):
-        if self.current_phase == "learn_weights":
+        if self._append_data:
             super().append_data(action_features, action_index)
+        # elif self.current_phase == "learn_weights":
+        #     super().append_data(action_features, action_index)
 
     # def determine_rollout_mechanism(self):
     #     """
@@ -307,6 +313,7 @@ class HierarchicalLearning(MLearning):
         self.rollout_cumu_dom_filter = self.rollout_cumu_dom_filter_per_phase[self.current_phase_index]
         self.rollout_mechanism = self.rollout_mechanism_per_phase[self.current_phase_index]
         self.gamma = self.gamma_per_phase[self.current_phase_index]
+        self._append_data = self.append_data_per_phase[self.current_phase_index]
         # self.filter_best = self.filter_best_phases[self.phase_ix]
         # self.ols = self.ols_phases[self.phase_ix]
         # self.delete_oldest_data_point_every = self.delete_oldest_data_point_every_phases[self.phase_ix]
@@ -320,6 +327,7 @@ class HierarchicalLearning(MLearning):
         print("self.rollout_cumu_dom_filter = ", self.rollout_cumu_dom_filter)
         print("self.rollout_mechanism = ", self.rollout_mechanism)
         print("self.gamma = ", self.gamma)
+        print("self._append_data = ", self._append_data)
 
         if old_phase == "learn_directions":  # self.phase == "learn_order":  # coming from "learn_directions"
             print("The learned directions are: ", self.learned_directions)
