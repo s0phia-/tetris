@@ -119,7 +119,7 @@ class NodeRAC(Node):
                                                        for chil_ix, chil in enumerate(children_states)])
         self.child_features[self.tetromino_name] = np.zeros((self.num_children, self.state.num_features), dtype=np.float_)
         for ix in range(self.num_children):
-            self.child_features[self.tetromino_name][ix] = self.children[self.tetromino_name][ix].state.get_features(direct_by=self.feature_directors)
+            self.child_features[self.tetromino_name][ix] = self.children[self.tetromino_name][ix].state.get_features_and_direct(direct_by=self.feature_directors)
         # if self.dom_filter or self.cumu_dom_filter:
         #     not_simply_dominated, not_cumu_dominated = domtools.dom_filter(self.child_features[self.tetromino_name],
         #                                                                    len_after_states=self.num_children)

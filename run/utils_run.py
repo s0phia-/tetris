@@ -67,7 +67,7 @@ def load_D(p, max_samples):
     return D
 
 
-# @njit(fastmath=True, cache=False)
+@njit(fastmath=True, cache=False)
 def calc_lowest_free_rows(rep):
     num_rows, n_cols = rep.shape
     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)

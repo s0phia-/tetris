@@ -9,18 +9,18 @@ spec_agent = [
     ('feature_directors', int64[:]),
     ('feature_type', numba.types.string),
     ('num_features', int64),
-    ('feature_directors', int64[:])
+    ('feature_directors', float64[:])
 ]
 
 
-# @jitclass(spec_agent)
+@jitclass(spec_agent)
 class ConstantAgent:
-    def __init__(self, policy_weights, feature_type="bcts", feature_directors=np.array([-1, -1, -1, -1, -1, -1, 1, -1])):
+    def __init__(self, policy_weights, feature_type="bcts", feature_directors=np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)):
         self.policy_weights = policy_weights
         self.feature_type = feature_type
         self.num_features = len(self.policy_weights)
         if self.feature_type == "bcts":
-            print("Features are directed automatically to be BCTS features.")
+            # print("Features are directed automatically to be BCTS features.")
             self.feature_directors = feature_directors
         # else:
         #     self.feature_directors = feature_directors
@@ -47,11 +47,12 @@ class ConstantAgent:
                          0.0,
                          1,
                          "bcts",
-                         True)  #, move_index
+                         True,
+                         False)  #, move_index
 
         action_features = np.zeros((num_children, self.num_features))
         for ix, after_state in enumerate(children_states):
-            action_features[ix] = after_state.get_features(self.feature_directors, False)  # direct_by=self.feature_directors  , order_by=None  , addRBF=False
+            action_features[ix] = after_state.get_features_and_direct(self.feature_directors, False)  # direct_by=self.feature_directors  , order_by=None  , addRBF=False
         utilities = action_features.dot(np.ascontiguousarray(self.policy_weights))
         max_indices = np.where(utilities == np.max(utilities))[0]
         move_index = np.random.choice(max_indices)

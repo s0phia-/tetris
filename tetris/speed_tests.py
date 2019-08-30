@@ -7,7 +7,7 @@ def softmax(U):
     ps = np.exp(U - np.max(U))
     ps /= np.sum(ps)
     return ps
-# @njit
+@njit
 def softmax_n(U):
     ps = np.exp(U - np.max(U))
     ps /= np.sum(ps)
@@ -96,7 +96,7 @@ def f_np(after_states, agent):
 
 # weights = agent.mlp.state_dict()['0.weight'].numpy()[0]
 
-# # @njit
+# @njit
 # def f_nb(after_states, weights):
 #     values = np.zeros(len(after_states), dtype=np.float_)
 #     for ix, after_state in enumerate(after_states):
@@ -145,7 +145,7 @@ st = current_state.State(representation=representation)
 environment.current_state = st
 environment.current_state.calc_lowest_free_rows()
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def get_lowest_free_row_1d(arr):
     last_occurrence = np.nonzero(arr)[0]
     if len(last_occurrence) == 0:
@@ -155,7 +155,7 @@ def get_lowest_free_row_1d(arr):
     return lowest_free_row
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def calc_lowest_free_rows2(rep):
     n_cols = rep.shape[1]
     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)
@@ -164,7 +164,7 @@ def calc_lowest_free_rows2(rep):
     return lowest_free_rows
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def calc_lowest_free_rows3(rep):
     num_rows, n_cols = rep.shape
     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)

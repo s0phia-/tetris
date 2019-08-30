@@ -65,6 +65,10 @@ class Cbmpi:
                 self.cmaes_var, inopts={'verb_disp': 0,
                                         'verb_filenameprefix': "output/cmaesout" + str(self.seed),
                                         'popsize': self.n})
+        self.step = 0
+
+    def update_steps(self):
+        self.step += 1
 
     def learn(self):
         self.construct_rollout_set()
@@ -82,7 +86,7 @@ class Cbmpi:
             # if ix % 5000 == 0 and self.verbose:
             #     print("rollout state:", ix)
             # Don't store intercept
-            self.state_features[ix, :] = rollout_state.get_features_no_dir(True)[1:]
+            self.state_features[ix, :] = rollout_state.get_features_pure(True)[1:]
             self.state_values[ix] = value_roll_out(rollout_state, self.m, self.gamma, self.tetromino_handler,
                                                    self.policy_weights, self.value_weights, self.num_features)
             actions_value_estimates, state_action_features = \
@@ -202,7 +206,7 @@ class Cbmpi:
     #         state_tmp, _ = self.choose_action_value_rollout(start_state=state_tmp, start_tetromino=tetromino_tmp)
     #         if len(available_after_states) == 0:
     #             return value_estimate
-    #         final_state_features = state_tmp.get_features(direct_by=None,  addRBF=True) # order_by=None, standardize_by=None,
+    #         final_state_features = state_tmp.get_features_and_direct(direct_by=None,  addRBF=True) # order_by=None, standardize_by=None,
     #         # value_estimate += self.gamma ** count + final_state_features.dot(self.value_weights)
     #         value_estimate += (self.gamma ** count) * self.lin_reg.predict(final_state_features.reshape(1, -1))
     #     return value_estimate
@@ -220,7 +224,7 @@ class Cbmpi:
     #         return None, 0
     #     action_features = np.zeros((num_states, self.num_features))
     #     for ix, after_state in enumerate(available_after_states):
-    #         action_features[ix] = after_state.get_features_no_dir(direct_by=None, order_by=None, standardize_by=None)
+    #         action_features[ix] = after_state.get_features_pure(direct_by=None, order_by=None, standardize_by=None)
     #     utilities = action_features.dot(self.policy_weights)
     #     max_indices = np.where(utilities == np.max(utilities))[0]
     #     move_index = np.random.choice(max_indices)
@@ -241,7 +245,7 @@ class Cbmpi:
     #         return action_value_estimates, None
     #     for child_ix in range(num_children):
     #         state_tmp = children_states[child_ix]
-    #         state_action_features[child_ix] = state_tmp.get_features(direct_by=None) # order_by=None, standardize_by=None
+    #         state_action_features[child_ix] = state_tmp.get_features_and_direct(direct_by=None) # order_by=None, standardize_by=None
     #         cumulative_reward = state_tmp.reward
     #         # cumulative_reward = 0
     #
@@ -268,7 +272,7 @@ class Cbmpi:
     #             tetromino_tmp = self.tetromino_sampler.next_tetromino()
     #             state_tmp, _ = self.choose_action_q_rollout(start_state=state_tmp, start_tetromino=tetromino_tmp)
     #             if state_tmp is not None:
-    #                 final_state_features = state_tmp.get_features_no_dir(True)
+    #                 final_state_features = state_tmp.get_features_pure(True)
     #                 # cumulative_reward += self.gamma ** count + final_state_features.dot(self.value_weights)
     #                 cumulative_reward += (self.gamma ** count) * self.lin_reg.predict(final_state_features.reshape(1, -1))
     #
@@ -276,7 +280,7 @@ class Cbmpi:
     #     return action_value_estimates, state_action_features
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def policy_loss_function(pol_weights, N, did_rollout, state_action_features, num_available_actions,
                          state_action_values):
     loss = 0.
@@ -301,7 +305,7 @@ def policy_loss_function(pol_weights, N, did_rollout, state_action_features, num
     return loss
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def action_value_roll_out(start_state,
                           m,
                           gamma,
@@ -320,7 +324,7 @@ def action_value_roll_out(start_state,
         return action_value_estimates, state_action_features
     for child_ix in range(num_child_states):
         state_tmp = child_states[child_ix]
-        state_action_features[child_ix] = state_tmp.get_features_no_dir(False) # order_by=None, standardize_by=None
+        state_action_features[child_ix] = state_tmp.get_features_pure(False) # order_by=None, standardize_by=None
         cumulative_reward = state_tmp.n_cleared_lines
         # print("Starting new action rollout")
         game_ended = False
@@ -343,14 +347,14 @@ def action_value_roll_out(start_state,
             num_after_states = len(available_after_states)
             if num_after_states > 0:
                 state_tmp = choose_action_in_rollout(available_after_states, policy_weights, num_features)
-                final_state_features = state_tmp.get_features_no_dir(True)
+                final_state_features = state_tmp.get_features_pure(True)
                 cumulative_reward += (gamma ** count) * final_state_features.dot(value_weights)
 
         action_value_estimates[child_ix] = cumulative_reward
     return action_value_estimates, state_action_features
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def value_roll_out(start_state,
                    m,
                    gamma,
@@ -381,13 +385,13 @@ def value_roll_out(start_state,
         state_tmp = choose_action_in_rollout(available_after_states, policy_weights,
                                              # rollout_dom_filter, rollout_cumu_dom_filter,
                                              num_features)
-        final_state_features = state_tmp.get_features_no_dir(True)  # order_by=None, standardize_by=None,
+        final_state_features = state_tmp.get_features_pure(True)  # order_by=None, standardize_by=None,
         # value_estimate += self.gamma ** count + final_state_features.dot(self.value_weights)
         value_estimate += (gamma ** count) * final_state_features.dot(value_weights)
     return value_estimate
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def choose_action_in_rollout(available_after_states, policy_weights,
                              # rollout_dom_filter, rollout_cumu_dom_filter,
                              # feature_directors,
@@ -395,7 +399,7 @@ def choose_action_in_rollout(available_after_states, policy_weights,
     num_states = len(available_after_states)
     action_features = np.zeros((num_states, num_features))
     for ix, after_state in enumerate(available_after_states):
-        action_features[ix] = after_state.get_features_no_dir(False)  # , order_by=self.feature_order
+        action_features[ix] = after_state.get_features_pure(False)  # , order_by=self.feature_order
     # if rollout_cumu_dom_filter:
     #     not_simply_dominated, not_cumu_dominated = dom_filter(action_features, len_after_states=num_states)  # domtools.
     #     action_features = action_features[not_cumu_dominated]

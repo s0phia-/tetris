@@ -5,7 +5,7 @@ from tetris.utils import print_board_to_string, print_tetromino
 
 np.random.seed(3)
 
-# @njit(fastmath=True, cache=False)
+@njit(fastmath=True, cache=False)
 def calc_lowest_free_rows(rep):
     num_rows, n_cols = rep.shape
     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)

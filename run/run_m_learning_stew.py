@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 import random
 import multiprocessing
-from run import learn
+from run import learn_and_evaluate
 from run import utils_run
 
 """
@@ -87,15 +87,15 @@ def run_loop(p, seed):
                                  rollout_length=p.rollout_length,
                                  number_of_rollouts_per_child=p.number_of_rollouts_per_child,
                                  learn_every_step_until=p.learn_every_step_until,
-                                 learn_from_step=p.learn_from_step,
+                                 learn_from_step_in_current_phase=p.learn_from_step,
                                  max_batch_size=p.max_batch_size,
                                  learn_periodicity=p.learn_periodicity,
                                  num_columns=p.num_columns)
     env = tetris.Tetris(num_columns=p.num_columns, num_rows=p.num_rows)
     test_env = tetris.Tetris(num_columns=p.num_columns, num_rows=p.num_rows, max_cleared_test_lines=p.max_cleared_test_lines)
     test_results_ix, tested_weights_ix = \
-        learn.learn_and_evaluate(env, test_env, agent, p.num_tests,
-                                 p.num_test_games, p.test_points)
+        learn_and_evaluate.learn_and_evaluate(env, test_env, agent, p.num_tests,
+                                              p.num_test_games, p.test_points)
     return [test_results_ix, tested_weights_ix]
 
 

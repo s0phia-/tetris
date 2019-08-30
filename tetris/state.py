@@ -7,7 +7,7 @@ specTerm = [
     ('terminal_state', bool_),
 ]
 
-# @jitclass(specTerm)
+@jitclass(specTerm)
 class TerminalState:
     def __init__(self):
         self.terminal_state = True
@@ -34,7 +34,7 @@ spec = [
 ]
 
 
-# @jitclass(spec)
+@jitclass(spec)
 class State(object):
     def __init__(self,
                  representation,
@@ -68,44 +68,15 @@ class State(object):
                 self.terminal_state = check_terminal(self.representation, self.num_rows)
                 self.representation = self.representation[:self.num_rows, ]
 
-
-    # def __repr__(self):
-    #     return self.print_board_to_string()
-    #
-    # def print_board_to_string(self):
-    #     string = "\n"
-    #     for row_ix in range(self.num_rows):
-    #         # Start from top
-    #         row_ix = self.num_rows - row_ix - 1
-    #         string += "|"
-    #         for col_ix in range(self.num_columns):
-    #             if self.representation[row_ix, col_ix]:
-    #                 string += "██"
-    #             else:
-    #                 string += "  "
-    #         string += "|\n"
-    #     return string
-
-    def get_features(self, direct_by, addRBF=False):  #, order_by=None, standardize_by=None, addRBF=False
+    def get_features_order_and_direct(self, direct_by, order_by, addRBF=False):
         if not self.features_are_calculated:
             if self.feature_type == "bcts":
                 self.calc_bcts_features()
                 self.features_are_calculated = True
-                # else:
-                #     # self.update_bcts_features()
-                #     # UPDATED_FEATURES = self.features.copy()
-                #     # self.calc_bcts_features()
-                #     # if np.any(UPDATED_FEATURES != self.features):
-                #     #     print("BLA")
-                #     self.calc_bcts_features()
-
             else:
                 raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
-        # TODO: check whether copy is needed here.
-        out = self.features * direct_by # .copy()
-        # features = features
-        # if order_by is not None:
-        #     features = features[order_by]
+        out = self.features * direct_by  # .copy()
+        out = out[order_by]
         # if standardize_by is not None:
         #     features = features / standardize_by
         if addRBF:
@@ -115,7 +86,22 @@ class State(object):
                 ))
         return out
 
-    def get_features_no_dir(self, addRBFandIntercept=False):  #, order_by=None, standardize_by=None, addRBF=False
+    def get_features_and_direct(self, direct_by, addRBF=False):
+        if not self.features_are_calculated:
+            if self.feature_type == "bcts":
+                self.calc_bcts_features()
+                self.features_are_calculated = True
+            else:
+                raise ValueError("Feature type must be either bcts or standardized_bcts or simple or super_simple")
+        out = self.features * direct_by  # .copy()
+        if addRBF:
+            out = np.concatenate((
+                out,
+                np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.num_rows / 4) ** 2 / (2 * (self.num_rows / 5) ** 2))
+                ))
+        return out
+
+    def get_features_pure(self, addRBFandIntercept=False):  #, order_by=None, standardize_by=None, addRBF=False
         if not self.features_are_calculated:
             if self.feature_type == "bcts":
                 self.calc_bcts_features()
@@ -130,12 +116,6 @@ class State(object):
                 np.exp(-(np.mean(self.lowest_free_rows) - np.arange(5) * self.num_rows / 4) ** 2 / (2 * (self.num_rows / 5) ** 2))
                 ))
         return features
-
-    # TODO: Implement order / directions...
-    # def get_features_with_intercept(self):
-    #     if self.features is None:
-    #         self.calc_feature_values()
-    #     return np.insert(self.features, obj=0, values=1.)
 
     def clear_lines(self, changed_lines):
         num_columns = self.num_columns
@@ -168,8 +148,6 @@ class State(object):
 
         self.n_cleared_lines = n_cleared_lines
         return is_full  # , n_cleared_lines, representation, lowest_free_rows
-    # def update_bcts_features(self, old_feature_values, old_rows_with_holes):
-    #     pass
 
     # TODO: Optimization ideas: representation to bools -- seemes to work!
     # TODO:                     only count hole depth first time when an actual hole is found
@@ -402,7 +380,7 @@ class State(object):
                                   cumulative_wells, row_transitions, eroded_piece_cells, hole_depths])
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def check_terminal(representation, num_rows):
     is_terminal = False
     for ix in representation[num_rows]:
@@ -412,14 +390,14 @@ def check_terminal(representation, num_rows):
     return is_terminal
 
 
-# @njit(fastmath=True, cache=False)
+@njit(fastmath=True, cache=False)
 def numba_sum_int(int_arr):
     acc = 0
     for i in int_arr:
         acc += i
     return acc
 
-# @njit(fastmath=True, cache=False)
+@njit(fastmath=True, cache=False)
 def numba_sum(arr):
     acc = 0.
     for i in arr:
@@ -910,7 +888,7 @@ def numba_sum(arr):
     #     # assert cumulative_wells == np.sum(self.cumulative_wells_per_col)
 
 
-# # @njit(fastmath=True, cache=False, debug=True)
+# @njit(fastmath=True, cache=False, debug=True)
 # def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_columns):
 #     row_sums = np.sum(representation[changed_lines, :], axis=1)
 #     is_full = (row_sums == num_columns)
@@ -936,7 +914,7 @@ def numba_sum(arr):
 #     return is_full, n_cleared_lines, representation, lowest_free_rows
 #
 
-# # @njit(fastmath=True, cache=False)
+# @njit(fastmath=True, cache=False)
 # def minmaxavg_jitted(x):
 #     maximum = x[0]
 #     minimum = x[0]
@@ -952,7 +930,7 @@ def numba_sum(arr):
 #
 
 
-# # @njit(fastmath=True, cache=False)
+# @njit(fastmath=True, cache=False)
 # def calc_lowest_free_rows(rep):
 #     num_rows, n_cols = rep.shape
 #     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)
