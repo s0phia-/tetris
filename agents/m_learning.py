@@ -23,6 +23,7 @@ class MLearning:
                  lambda_min,
                  lambda_max,
                  num_lambdas,
+                 fixed_lambda,
                  gamma,
                  rollout_length,
                  number_of_rollouts_per_child,
@@ -69,12 +70,15 @@ class MLearning:
 
         # Data and model (regularization type)
         self.regularization = regularization
-        assert(self.regularization in ["stew", "no_regularization", "ridge", "nonnegative", "ew", "ttb"])
-        self.is_learning = self.regularization in ["stew", "ridge", "no_regularization", "nonnegative"]
+        assert(self.regularization in ["stew", "no_regularization", "ridge", "nonnegative", "ew", "ttb", "stew_fixed_lambda"])
+        self.is_learning = self.regularization in ["stew", "ridge", "no_regularization", "nonnegative", "stew_fixed_lambda"]
         if self.regularization == "ridge":
             D = create_ridge_matrix(self.num_features)
-        else:
+        elif self.regularization in ["stew", "stew_fixed_lambda", "nonnegative"]:
             D = create_diff_matrix(self.num_features)
+        else:
+            D = None
+        self.fixed_lambda = fixed_lambda
         self.model = StewMultinomialLogit(num_features=self.num_features, D=D, lambda_min=lambda_min,
                                           lambda_max=lambda_max, num_lambdas=num_lambdas, verbose=verbose_stew,
                                           nonnegative=self.regularization == "nonnegative", one_se_rule=False)
@@ -123,6 +127,8 @@ class MLearning:
             learning_time_start = time.time()
             if self.regularization in ["no_regularization", "nonnegative"]:
                 self.policy_weights = self.model.fit(data=self.mlogit_data.sample(), lam=0, standardize=False)
+            elif self.regularization == "stew_fixed_lambda":
+                self.policy_weights = self.model.fit(data=self.mlogit_data.sample(), lam=self.fixed_lambda, standardize=False)
             elif self.regularization in ["ridge", "stew"]:
                 self.policy_weights, _ = self.model.cv_fit(data=self.mlogit_data.sample())
             self.policy_weights = np.ascontiguousarray(self.policy_weights)
@@ -143,6 +149,7 @@ class HierarchicalLearning(MLearning):
                  lambda_min,
                  lambda_max,
                  num_lambdas,
+                 fixed_lambda,
                  gamma_per_phase,
                  append_data_per_phase,
                  rollout_length,
@@ -188,7 +195,7 @@ class HierarchicalLearning(MLearning):
         self.check_arguments(regularization)
 
         super().__init__("hierarchical_learning", regularization, dom_filter_per_phase[0], cumu_dom_filter_per_phase[0], rollout_dom_filter_per_phase[0],
-                         rollout_cumu_dom_filter_per_phase[0], lambda_min, lambda_max, num_lambdas, gamma_per_phase[0], rollout_length,
+                         rollout_cumu_dom_filter_per_phase[0], lambda_min, lambda_max, num_lambdas, fixed_lambda, gamma_per_phase[0], rollout_length,
                          number_of_rollouts_per_child, learn_every_step_until, max_batch_size, learn_periodicity,
                          increase_learn_periodicity, learn_from_step_in_current_phase, num_columns, self.feature_directors, feature_type,
                          verbose, verbose_stew)
@@ -198,7 +205,7 @@ class HierarchicalLearning(MLearning):
         self.learned_directions = np.zeros(self.num_features)
 
     def check_arguments(self, regularization):
-        assert regularization in ["no_regularization", "nonnegative", "ridge", "stew"]
+        assert regularization in ["no_regularization", "nonnegative", "ridge", "stew", "stew_fixed_lambda"]
         assert np.all(np.isin(np.array(self.phase_names), np.array(["learn_directions", "learn_order", "learn_weights"])))
         assert len(self.dom_filter_per_phase) == self.num_phases
         assert len(self.cumu_dom_filter_per_phase) == self.num_phases

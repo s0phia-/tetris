@@ -12,13 +12,15 @@ def learn_and_evaluate(env,
                        num_test_games,
                        test_points,
                        agent_id=0,
-                       verbose=False):
+                       verbose=False,
+                       store_weights=False):
         env.reset()
         test_agent = ConstantAgent(policy_weights=np.ones(env.num_features, dtype=np.float64),
                                    feature_directors=2*(np.random.binomial(1, 0.5, 8) - 0.5))
         test_results = np.zeros((num_tests, num_test_games))
         tested_weights = np.zeros((num_tests, env.num_features))
-        # weights_storage = np.expand_dims(self.agent.policy_weights, axis=0)
+        if store_weights:
+            weights_storage = np.expand_dims(agent.policy_weights * agent.copy_current_feature_directors(), axis=0)
         if num_tests == 0:
             test_index = -1
         else:
@@ -74,12 +76,17 @@ def learn_and_evaluate(env,
                 if agent.name in ["mlearning", "hierarchical_learning"]:
                     agent.append_data(action_features=action_features, action_index=action_index)
                     agent.learn(action_features=action_features, action_index=action_index)
+                    if store_weights:
+                        weights_storage = np.vstack((weights_storage, agent.policy_weights.copy() * agent.copy_current_feature_directors()))
                 elif agent.name == "cbmpi":
                     agent.learn()
                 # print("self.agent.mlogit_data.choice_set_counter: " + str(agent.mlogit_data.choice_set_counter))
                 # print("self.agent.mlogit_data.current_number_of_choice_sets: " + str(agent.mlogit_data.current_number_of_choice_sets))
             agent.update_steps()
-        return test_results, tested_weights # , weights_storage
+        if store_weights:
+            return test_results, tested_weights, weights_storage
+        else:
+            return test_results, tested_weights  # , weights_storage
 
 
 @njit(cache=False)
