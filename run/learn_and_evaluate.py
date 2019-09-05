@@ -15,8 +15,12 @@ def learn_and_evaluate(env,
                        verbose=False,
                        store_weights=False):
         env.reset()
-        test_agent = ConstantAgent(policy_weights=np.ones(env.num_features, dtype=np.float64),
-                                   feature_directors=2*(np.random.binomial(1, 0.5, 8) - 0.5))
+        if agent.name == "cbmpi":
+            test_agent = ConstantAgent(policy_weights=np.ones(env.num_features, dtype=np.float64),
+                                       feature_directors=np.ones(env.num_features, dtype=np.float64))
+        else:
+            test_agent = ConstantAgent(policy_weights=np.ones(env.num_features, dtype=np.float64),
+                                       feature_directors=2*(np.random.binomial(1, 0.5, 8) - 0.5))
         test_results = np.zeros((num_tests, num_test_games))
         tested_weights = np.zeros((num_tests, env.num_features))
         if store_weights:
@@ -32,12 +36,18 @@ def learn_and_evaluate(env,
             if num_tests > 0 and agent.step in test_points:
                 test_weights = agent.policy_weights.copy()
                 test_agent.policy_weights = test_weights
-                test_directors = agent.copy_current_feature_directors()
-                test_agent.feature_directors = test_directors
+
+                if agent.name == "hierarchical_learning":
+                    if agent.num_phases == 1 and agent.current_phase == "learning_weights" and agent.step_in_current_phase <= agent.learn_from_step_in_current_phase:
+                        test_directors = np.zeros(env.num_features, dtype=np.float64)
+                    else:
+                        test_directors = agent.copy_current_feature_directors()
+                    test_agent.feature_directors = test_directors
+                    print("test_directors", test_directors)
+                    print("test_weights * test_directors", test_weights * test_directors)
                 tested_weights[test_index] = test_weights
                 # print("tested_weights", tested_weights)
-                print("test_directors", test_directors)
-                print("test_weights * test_directors", test_weights * test_directors)
+
                 # testing_time_start = time.time()
                 print("Agent", agent_id, "is TESTING: ", test_index + 1, " out of ", num_tests, " tests.")
                 test_results[test_index, :] = evaluate(test_env, test_agent, num_test_games)
