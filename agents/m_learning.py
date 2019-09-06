@@ -304,66 +304,67 @@ class HierarchicalLearning(MLearning):
         return switched_phase
 
     def switch_phase(self):
-        self.switched_phase_in_step.append(self.step)
-        old_phase = self.current_phase
-        self.step_in_current_phase = 0
-        self.current_phase_index += 1
-        self.current_phase = self.phase_names[self.current_phase_index]
+        if self.num_phases - 1 > self.current_phase:
+            self.switched_phase_in_step.append(self.step)
+            old_phase = self.current_phase
+            self.step_in_current_phase = 0
+            self.current_phase_index += 1
+            self.current_phase = self.phase_names[self.current_phase_index]
 
-        # self.gamma = self.gamma_phases[self.phase_ix]
-        # self.rollout_length = self.rollout_length_phases[self.phase_ix]
-        # self.rollout_action_selection = self.rollout_action_selection_phases[self.phase_ix]
-        # self.max_length_phase = self.max_length_phases[self.phase_ix]
-        self.dom_filter = self.dom_filter_per_phase[self.current_phase_index]
-        self.cumu_dom_filter = self.cumu_dom_filter_per_phase[self.current_phase_index]
-        self.rollout_dom_filter = self.rollout_dom_filter_per_phase[self.current_phase_index]
-        self.rollout_cumu_dom_filter = self.rollout_cumu_dom_filter_per_phase[self.current_phase_index]
-        self.rollout_mechanism = self.rollout_mechanism_per_phase[self.current_phase_index]
-        self.gamma = self.gamma_per_phase[self.current_phase_index]
-        self._append_data = self.append_data_per_phase[self.current_phase_index]
-        # self.filter_best = self.filter_best_phases[self.phase_ix]
-        # self.ols = self.ols_phases[self.phase_ix]
-        # self.delete_oldest_data_point_every = self.delete_oldest_data_point_every_phases[self.phase_ix]
-        # self.learn_from_step_in_current_phase = self.learn_from_step_phases[self.phase_ix]
-        # self.number_of_rollouts_per_child = self.number_of_rollouts_per_child_phases[self.phase_ix]
-        # self.num_total_rollouts = self.rollout_length * self.number_of_rollouts_per_child
-        print("Switching to phase: ", self.current_phase)
-        print("self.dom_filter = ", self.dom_filter)
-        print("self.cumu_dom_filter = ", self.cumu_dom_filter)
-        print("self.rollout_dom_filter = ", self.rollout_dom_filter)
-        print("self.rollout_cumu_dom_filter = ", self.rollout_cumu_dom_filter)
-        print("self.rollout_mechanism = ", self.rollout_mechanism)
-        print("self.gamma = ", self.gamma)
-        print("self._append_data = ", self._append_data)
+            # self.gamma = self.gamma_phases[self.phase_ix]
+            # self.rollout_length = self.rollout_length_phases[self.phase_ix]
+            # self.rollout_action_selection = self.rollout_action_selection_phases[self.phase_ix]
+            # self.max_length_phase = self.max_length_phases[self.phase_ix]
+            self.dom_filter = self.dom_filter_per_phase[self.current_phase_index]
+            self.cumu_dom_filter = self.cumu_dom_filter_per_phase[self.current_phase_index]
+            self.rollout_dom_filter = self.rollout_dom_filter_per_phase[self.current_phase_index]
+            self.rollout_cumu_dom_filter = self.rollout_cumu_dom_filter_per_phase[self.current_phase_index]
+            self.rollout_mechanism = self.rollout_mechanism_per_phase[self.current_phase_index]
+            self.gamma = self.gamma_per_phase[self.current_phase_index]
+            self._append_data = self.append_data_per_phase[self.current_phase_index]
+            # self.filter_best = self.filter_best_phases[self.phase_ix]
+            # self.ols = self.ols_phases[self.phase_ix]
+            # self.delete_oldest_data_point_every = self.delete_oldest_data_point_every_phases[self.phase_ix]
+            # self.learn_from_step_in_current_phase = self.learn_from_step_phases[self.phase_ix]
+            # self.number_of_rollouts_per_child = self.number_of_rollouts_per_child_phases[self.phase_ix]
+            # self.num_total_rollouts = self.rollout_length * self.number_of_rollouts_per_child
+            print("Switching to phase: ", self.current_phase)
+            print("self.dom_filter = ", self.dom_filter)
+            print("self.cumu_dom_filter = ", self.cumu_dom_filter)
+            print("self.rollout_dom_filter = ", self.rollout_dom_filter)
+            print("self.rollout_cumu_dom_filter = ", self.rollout_cumu_dom_filter)
+            print("self.rollout_mechanism = ", self.rollout_mechanism)
+            print("self.gamma = ", self.gamma)
+            print("self._append_data = ", self._append_data)
 
-        if old_phase == "learn_directions":  # self.phase == "learn_order":  # coming from "learn_directions"
-            print("The learned directions are: ", self.learned_directions)
-            self.feature_directors = np.sign(self.positive_direction_counts / self.meaningful_comparisons - 0.5)
-            print("Feature directors will be: ", self.feature_directors)
-            if self.current_phase == "learn_order":
-                self.positive_direction_counts = flip_positive_direction_counts(self.positive_direction_counts,
-                                                                                self.meaningful_comparisons,
-                                                                                self.feature_directors)
-            # Update existing training data with new feature_directions
-            # TODO: reintroduce if data from learn directions is stored.
-            # self.mlogit_data.data[:, 2:] = self.mlogit_data.data[:, 2:] * self.feature_directors
-        elif old_phase == "learn_order":  #self.phase == "learn_weights":  # coming from "learn_order"
-            # Feature variance business
-            print("Estimating feature variance from", len(self.mlogit_data.data), "data points")
-            std_deviations = np.std(self.mlogit_data.data[:, 2:], axis=0)
-            self.feature_stds = std_deviations
-            print("The standard deviations are ", self.feature_stds)
-            print("... for features", self.feature_names)
-            self.mlogit_data.delete_data()
+            if old_phase == "learn_directions":  # self.phase == "learn_order":  # coming from "learn_directions"
+                print("The learned directions are: ", self.learned_directions)
+                self.feature_directors = np.sign(self.positive_direction_counts / self.meaningful_comparisons - 0.5)
+                print("Feature directors will be: ", self.feature_directors)
+                if self.current_phase == "learn_order":
+                    self.positive_direction_counts = flip_positive_direction_counts(self.positive_direction_counts,
+                                                                                    self.meaningful_comparisons,
+                                                                                    self.feature_directors)
+                # Update existing training data with new feature_directions
+                # TODO: reintroduce if data from learn directions is stored.
+                # self.mlogit_data.data[:, 2:] = self.mlogit_data.data[:, 2:] * self.feature_directors
+            elif old_phase == "learn_order":  #self.phase == "learn_weights":  # coming from "learn_order"
+                # Feature variance business
+                print("Estimating feature variance from", len(self.mlogit_data.data), "data points")
+                std_deviations = np.std(self.mlogit_data.data[:, 2:], axis=0)
+                self.feature_stds = std_deviations
+                print("The standard deviations are ", self.feature_stds)
+                print("... for features", self.feature_names)
+                self.mlogit_data.delete_data()
 
-            # Order
-            print("The original order was", self.feature_names)
-            self.feature_order = self.feature_order[self.learned_order]
-            self.feature_names = self.feature_names[self.learned_order]
-            self.feature_stds = self.feature_stds[self.learned_order]
-            print("The new order is", self.feature_names)
-            self.feature_directors = self.feature_directors[self.learned_order]
-            print("...and accordingly, the new directions are: ", self.feature_directors)
+                # Order
+                print("The original order was", self.feature_names)
+                self.feature_order = self.feature_order[self.learned_order]
+                self.feature_names = self.feature_names[self.learned_order]
+                self.feature_stds = self.feature_stds[self.learned_order]
+                print("The new order is", self.feature_names)
+                self.feature_directors = self.feature_directors[self.learned_order]
+                print("...and accordingly, the new directions are: ", self.feature_directors)
 
     def choose_action(self, start_state, start_tetromino):
         return choose_action_using_rollouts(start_state, start_tetromino, self.rollout_mechanism,
