@@ -304,7 +304,7 @@ class HierarchicalLearning(MLearning):
         return switched_phase
 
     def switch_phase(self):
-        if self.num_phases - 1 > self.current_phase:
+        if self.num_phases - 1 > self.current_phase_index:
             self.switched_phase_in_step.append(self.step)
             old_phase = self.current_phase
             self.step_in_current_phase = 0
