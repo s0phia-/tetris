@@ -162,7 +162,8 @@ class HierarchicalLearning(MLearning):
                  num_columns,
                  feature_type="bcts",
                  verbose=False,
-                 verbose_stew=False):
+                 verbose_stew=False,
+                 provide_directions=False):
         self.phase_names = phase_names
         self.num_phases = len(self.phase_names)
         self.current_phase_index = 0
@@ -182,9 +183,13 @@ class HierarchicalLearning(MLearning):
         # self.rollout_mechanism = self.determine_rollout_mechanism()
         self.rollout_mechanism = self.rollout_mechanism_per_phase[0]
 
+        self.provide_directions = provide_directions
+
         if self.current_phase == "learn_weights" and feature_type == "bcts":
-            # self.feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
-            self.feature_directors = (np.random.binomial(1, 0.5, 8) - 0.5) * 2
+            if self.provide_directions:
+                self.feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
+            else:
+                self.feature_directors = (np.random.binomial(1, 0.5, 8) - 0.5) * 2
         elif self.current_phase == "learn_directions" and feature_type == "bcts":
             # TODO: random directions or all 1 here? (np.random.binomial(1, 0.5, 8) - 0.5) * 2
             # self.feature_directors = (np.random.binomial(1, 0.5, 8) - 0.5) * 2
