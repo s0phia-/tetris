@@ -12,7 +12,6 @@ def learn_and_evaluate(env,
                        num_test_games,
                        test_points,
                        agent_id=0,
-                       verbose=False,
                        store_weights=False):
         env.reset()
         if agent.name == "cbmpi":
