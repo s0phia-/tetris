@@ -7,7 +7,7 @@ specTerm = [
     ('terminal_state', bool_),
 ]
 
-@jitclass(specTerm)
+# @jitclass(specTerm)
 class TerminalState:
     def __init__(self):
         self.terminal_state = True
@@ -34,7 +34,7 @@ spec = [
 ]
 
 
-@jitclass(spec)
+# @jitclass(spec)
 class State(object):
     def __init__(self,
                  representation,
@@ -380,7 +380,7 @@ class State(object):
                                   cumulative_wells, row_transitions, eroded_piece_cells, hole_depths])
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def check_terminal(representation, num_rows):
     is_terminal = False
     for ix in representation[num_rows]:
@@ -390,14 +390,14 @@ def check_terminal(representation, num_rows):
     return is_terminal
 
 
-@njit(fastmath=True, cache=False)
+# @njit(fastmath=True, cache=False)
 def numba_sum_int(int_arr):
     acc = 0
     for i in int_arr:
         acc += i
     return acc
 
-@njit(fastmath=True, cache=False)
+# @njit(fastmath=True, cache=False)
 def numba_sum(arr):
     acc = 0.
     for i in arr:
@@ -888,7 +888,7 @@ def numba_sum(arr):
     #     # assert cumulative_wells == np.sum(self.cumulative_wells_per_col)
 
 
-# @njit(fastmath=True, cache=False, debug=True)
+# # @njit(fastmath=True, cache=False, debug=True)
 # def clear_lines_jitted(changed_lines, representation, lowest_free_rows, num_columns):
 #     row_sums = np.sum(representation[changed_lines, :], axis=1)
 #     is_full = (row_sums == num_columns)
@@ -914,7 +914,7 @@ def numba_sum(arr):
 #     return is_full, n_cleared_lines, representation, lowest_free_rows
 #
 
-# @njit(fastmath=True, cache=False)
+# # @njit(fastmath=True, cache=False)
 # def minmaxavg_jitted(x):
 #     maximum = x[0]
 #     minimum = x[0]
@@ -930,7 +930,7 @@ def numba_sum(arr):
 #
 
 
-# @njit(fastmath=True, cache=False)
+# # @njit(fastmath=True, cache=False)
 # def calc_lowest_free_rows(rep):
 #     num_rows, n_cols = rep.shape
 #     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)

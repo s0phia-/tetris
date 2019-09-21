@@ -68,21 +68,21 @@ def print_tetromino(tetromino_index):
       ██"""
     return string
 
-@njit(cache=False)
+# @njit(cache=False)
 def one_hot_vector(one_index, length):
     out = np.zeros(length)
     out[one_index] = 1.
     return out
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def vert_one_hot(one_index, length):
     out = np.zeros((length, 1))
     out[one_index] = 1.
     return out
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def compute_action_probabilities(action_features, weights, temperature):
     utilities = action_features.dot(weights) / temperature
     utilities = utilities - np.max(utilities)
@@ -91,14 +91,14 @@ def compute_action_probabilities(action_features, weights, temperature):
     return probabilities
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def grad_of_log_action_probabilities(features, probabilities, action_index):
     features_of_chosen_action = features[action_index]
     grad = features_of_chosen_action - features.T.dot(probabilities)
     return grad
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def softmax(U):
     ps = np.exp(U - np.max(U))
     ps /= np.sum(ps)

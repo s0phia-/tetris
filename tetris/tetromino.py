@@ -25,10 +25,10 @@ class TetrominoSamplerRandom:
         return np.random.choice(a=self.tetrominos, size=1)[0]
 
 
-@jitclass(specT)
+# @jitclass(specT)
 class Tetromino:
     def __init__(self, feature_type, num_features, num_columns):
-        # Tetromino.__init__(self, feature_type, num_features, num_columns)
+        assert(feature_type == "bcts")
         self.feature_type = feature_type
         self.num_features = num_features
         self.num_columns = num_columns

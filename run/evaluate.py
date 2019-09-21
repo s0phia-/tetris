@@ -10,7 +10,7 @@ time_id = datetime.now().strftime('%Y_%m_%d_%H_%M')
 np.random.seed(1)
 
 
-@njit
+# @njit
 def evaluate(env, agent, num_runs):
     np.random.seed(1)
     rewards = np.zeros(num_runs, dtype=np.int64)
@@ -18,13 +18,13 @@ def evaluate(env, agent, num_runs):
         env.reset()
         while not env.game_over and env.cleared_lines <= env.max_cleared_test_lines:
             print(print_board_to_string(env.current_state))
-            print(print_tetromino(env.tetromino_handler.current_tetromino))
-            after_state = agent.choose_action_test(start_state=env.current_state, start_tetromino=env.tetromino_handler)
+            print(print_tetromino(env.generative_model.current_tetromino))
+            after_state = agent.choose_action_test(start_state=env.current_state, start_tetromino=env.generative_model)
             if after_state.terminal_state:
                 print("Game over")
             else:
                 pass
-                # print(print_tetromino(env.tetromino_handler.current_tetromino))
+                # print(print_tetromino(env.generative_model.current_tetromino))
                 # print(print_board_to_string(after_state))
             env.make_step(after_state)
 

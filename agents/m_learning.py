@@ -48,7 +48,7 @@ class MLearning:
                                        'eroded', 'hole_depth'])  # Uses BCTS features.
         self.verbose = verbose
         self.max_choice_set_size = 34  # There are never more than 34 actions in Tetris
-        self.tetromino_handler = tetromino.Tetromino(self.feature_type, self.num_features, self.num_columns)
+        self.generative_model = tetromino.Tetromino(self.feature_type, self.num_features, self.num_columns)
 
         # Algo params
         self.gamma = gamma
@@ -99,7 +99,7 @@ class MLearning:
 
     def choose_action(self, start_state, start_tetromino):
         return choose_action_using_rollouts(start_state, start_tetromino,
-                                            self.rollout_length, self.tetromino_handler, self.policy_weights,
+                                            self.rollout_length, self.generative_model, self.policy_weights,
                                             self.dom_filter, self.cumu_dom_filter, self.rollout_dom_filter, self.rollout_cumu_dom_filter,
                                             self.feature_directors, self.num_features, self.gamma,
                                             self.number_of_rollouts_per_child)
@@ -373,7 +373,7 @@ class HierarchicalLearning(MLearning):
 
     def choose_action(self, start_state, start_tetromino):
         return choose_action_using_rollouts(start_state, start_tetromino, self.rollout_mechanism,
-                                            self.rollout_length, self.tetromino_handler, self.policy_weights,
+                                            self.rollout_length, self.generative_model, self.policy_weights,
                                             self.dom_filter, self.cumu_dom_filter, self.rollout_dom_filter,
                                             self.rollout_cumu_dom_filter,
                                             self.feature_directors,
@@ -384,7 +384,7 @@ class HierarchicalLearning(MLearning):
         #     super().choose_action(start_state, start_tetromino)
         # elif self.rollout_mechanism == "greedy_if_reward_else_random":
         #     return choose_action_using_rollouts(start_state, start_tetromino, self.rollout_mechanism,
-        #                                         self.rollout_length, self.tetromino_handler, self.policy_weights,
+        #                                         self.rollout_length, self.generative_model, self.policy_weights,
         #                                         self.dom_filter, self.cumu_dom_filter, self.rollout_dom_filter,
         #                                         self.rollout_cumu_dom_filter,
         #                                         self.feature_directors,
@@ -393,7 +393,7 @@ class HierarchicalLearning(MLearning):
         #                                         self.learned_directions)
         # elif self.rollout_mechanism == "greedy_if_reward_else_max_util_from_learned_directions":
         #     return choose_action_using_rollouts(start_state, start_tetromino, self.rollout_mechanism,
-        #                                         self.rollout_length, self.tetromino_handler, self.policy_weights,
+        #                                         self.rollout_length, self.generative_model, self.policy_weights,
         #                                         self.dom_filter, self.cumu_dom_filter, self.rollout_dom_filter,
         #                                         self.rollout_cumu_dom_filter,
         #                                         self.feature_directors,   #### IMPORTANT CHANGE
@@ -402,9 +402,9 @@ class HierarchicalLearning(MLearning):
         #                                         self.learned_directions)
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def choose_action_using_rollouts(start_state, start_tetromino, rollout_mechanism,
-                                 rollout_length, tetromino_handler, policy_weights,
+                                 rollout_length, generative_model, policy_weights,
                                  dom_filter, cumu_dom_filter, rollout_dom_filter, rollout_cumu_dom_filter,
                                  feature_directors, num_features, gamma, number_of_rollouts_per_child,
                                  learned_directions):
@@ -413,10 +413,10 @@ def choose_action_using_rollouts(start_state, start_tetromino, rollout_mechanism
     if num_children == 0:
         # Game over!
         return (State(np.zeros((1, 1), dtype=np.bool_), np.zeros(1, dtype=np.int64),
-                     np.array([0], dtype=np.int64), np.array([0], dtype=np.int64),
-                     0.0, 1, "bcts", True, False),
-                0,  # dummy child_index
-                np.zeros((2, 2)))  # dummy action_features
+                      np.array([0], dtype=np.int64), np.array([0], dtype=np.int64),
+                      0.0, 1, "bcts", True, False),  # dummy state
+                0,                                   # dummy child_index
+                np.zeros((2, 2)))                    # dummy action_features
 
     action_features = np.zeros((num_children, num_features), dtype=np.float_)
     for ix in range(num_children):
@@ -439,7 +439,7 @@ def choose_action_using_rollouts(start_state, start_tetromino, rollout_mechanism
         if do_rollout:
             for rollout_ix in range(number_of_rollouts_per_child):
                 child_total_values[child] += roll_out(children_states[child], rollout_length, rollout_mechanism,
-                                                      tetromino_handler, policy_weights,
+                                                      generative_model, policy_weights,
                                                       rollout_dom_filter, rollout_cumu_dom_filter,
                                                       feature_directors, num_features, gamma, learned_directions)
         else:
@@ -448,21 +448,20 @@ def choose_action_using_rollouts(start_state, start_tetromino, rollout_mechanism
     max_value = np.max(child_total_values)
     max_value_indices = np.where(child_total_values == max_value)[0]
     child_index = np.random.choice(max_value_indices)
-    # child_index = np.argmax(child_total_values)
     return children_states[child_index], child_index, action_features
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def roll_out(start_state, rollout_length, rollout_mechanism,
-             tetromino_handler, policy_weights,
+             generative_model, policy_weights,
              rollout_dom_filter, rollout_cumu_dom_filter,
              feature_directors, num_features, gamma, learned_directions):
     value_estimate = start_state.n_cleared_lines
     state_tmp = start_state
     count = 1
     while not state_tmp.terminal_state and count <= rollout_length:
-        tetromino_handler.next_tetromino()
-        available_after_states = tetromino_handler.get_after_states(state_tmp)
+        generative_model.next_tetromino()
+        available_after_states = generative_model.get_after_states(state_tmp)
         if len(available_after_states) == 0:
             # Game over!
             return value_estimate
@@ -487,7 +486,7 @@ def roll_out(start_state, rollout_length, rollout_mechanism,
     return value_estimate
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def choose_max_util_action_in_rollout(available_after_states, policy_weights,
                                       rollout_dom_filter, rollout_cumu_dom_filter,
                                       feature_directors, num_features):
@@ -512,7 +511,7 @@ def choose_max_util_action_in_rollout(available_after_states, policy_weights,
     return move
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def choose_greedy_if_reward_else_random_action_in_rollout(available_after_states, policy_weights,
                                                           rollout_dom_filter, rollout_cumu_dom_filter,
                                                           feature_directors, num_features):
@@ -553,7 +552,7 @@ def choose_greedy_if_reward_else_random_action_in_rollout(available_after_states
     return move
 
 
-@njit(cache=False)
+# @njit(cache=False)
 def choose_greedy_if_reward_else_max_util_from_learned_directions_action_in_rollout(
         available_after_states, policy_weights,
         rollout_dom_filter, rollout_cumu_dom_filter,
@@ -602,7 +601,7 @@ def choose_greedy_if_reward_else_max_util_from_learned_directions_action_in_roll
     return move
 
 
-@njit
+# @njit
 def flip_positive_direction_counts(positive_direction_counts, meaningful_comparisons, feature_directors):
     for ix in range(len(positive_direction_counts)):
         if feature_directors[ix] == -1.:

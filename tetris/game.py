@@ -4,23 +4,22 @@ import numba
 from numba import jitclass, bool_, int64
 
 
-specTetris = [
-    ('num_columns', int64),
-    ('num_rows', int64),
-    ('vebose', bool_),
-    ('tetromino_size', int64),
-    ('feature_type', numba.types.string),
-    ('num_features', int64),
-    ('max_cleared_test_lines', int64),
-    ('game_over', bool_),
-    ('current_state', state.State.class_type.instance_type),
-    ('tetromino_handler', tetromino.Tetromino.class_type.instance_type),
-    ('cleared_lines', int64),
-    ('cumulative_steps', int64)
-]
+# specTetris = [
+#     ('num_columns', int64),
+#     ('num_rows', int64),
+#     ('vebose', bool_),
+#     ('tetromino_size', int64),
+#     ('feature_type', numba.types.string),
+#     ('num_features', int64),
+#     ('max_cleared_test_lines', int64),
+#     ('game_over', bool_),
+#     ('current_state', state.State.class_type.instance_type),
+#     ('generative_model', tetromino.Tetromino.class_type.instance_type),
+#     ('cleared_lines', int64)
+# ]
 
 
-@jitclass(specTetris)
+# @jitclass(specTetris)
 class Tetris:
     """
     Tetris for reinforcement learning applications.
@@ -68,9 +67,8 @@ class Tetris:
                                          False,  # terminal_state=
                                          False  # has_overlapping_fields=
                                          )
-        self.tetromino_handler = tetromino.Tetromino(self.feature_type, self.num_features, self.num_columns)
+        self.generative_model = tetromino.Tetromino(self.feature_type, self.num_features, self.num_columns)
         self.cleared_lines = 0
-        self.cumulative_steps = 0
 
     def reset(self):
         self.game_over = False
@@ -86,19 +84,18 @@ class Tetris:
                                          )
         self.current_state.calc_bcts_features()
         self.cleared_lines = 0
-        self.tetromino_handler.next_tetromino()
+        self.generative_model.next_tetromino()
 
     # def is_game_over(self):
     #     if np.any(self.current_state.representation[self.num_rows]):
     #         self.game_over = True
 
     def make_step(self, after_state):
-        self.cumulative_steps += 1
         self.game_over = after_state.terminal_state
         if not self.game_over:
             self.cleared_lines += after_state.n_cleared_lines
             self.current_state = after_state
-            self.tetromino_handler.next_tetromino()
+            self.generative_model.next_tetromino()
 
     # def evaluate(self, agent):  # visualize=False, clear_the_output=False, sleep=0
     #     self.reset()
@@ -107,9 +104,9 @@ class Tetris:
     #         # current_tetromino = env.tetromino_sampler.next_tetromino()
     #         # env.current_tetromino
     #         # print(current_tetromino)
-    #         # env.tetromino_handler.next_tetromino()
-    #         # print(env.tetromino_handler.current_tetromino)
-    #         after_state = agent.choose_action_test(start_state=self.current_state, start_tetromino=self.tetromino_handler)
+    #         # env.generative_model.next_tetromino()
+    #         # print(env.generative_model.current_tetromino)
+    #         after_state = agent.choose_action_test(start_state=self.current_state, start_tetromino=self.generative_model)
     #         self.make_step(after_state)
     #         # if visualize and not self.current_state.terminal_state:
     #         #     self.print_board_to_string(self.current_state, clear_the_output, sleep)

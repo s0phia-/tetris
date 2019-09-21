@@ -5,7 +5,7 @@ class Cbapi:
     """
     This should become a general classification-based RL algorithm in the sense of
     Lagoudakis & Parr (2003), that is, using rollouts and directly approximating
-    the policy using a classifier state ---> action
+    the policy using a policy_approximator state ---> action
     """
     def __init__(self, classifier):
         self.classifier = classifier
