@@ -20,7 +20,7 @@ parameters = dict(
     # Run parameters
     num_agents=1,  # number of agents that get trained
     test_points=(3, 5, 10, 20, 50, 100, 200, 300),  # iterations of the algorithm in which the agent(s) get(s) tested
-    num_test_games=10,  # number of test games per 'test_point'. Results are averaged.
+    num_games_per_test=10,  # number of test games per 'test_point'. Results are averaged.
     seed=201, # random seed
 
     # Algorithm parameters
@@ -95,7 +95,7 @@ def run_loop(p, seed):
     test_env = tetris.Tetris(num_columns=p.num_columns, num_rows=p.num_rows, max_cleared_test_lines=p.max_cleared_test_lines)
     test_results_ix, tested_weights_ix = \
         learn_and_evaluate.learn_and_evaluate(env, test_env, agent, p.num_tests,
-                                              p.num_test_games, p.test_points)
+                                              p.num_games_per_test, p.test_points)
     return [test_results_ix, tested_weights_ix]
 
 

@@ -1,5 +1,4 @@
 import numpy as np
-import time
 from numba import njit
 from agents.constant_agent import ConstantAgent
 
@@ -7,11 +6,53 @@ from agents.constant_agent import ConstantAgent
 def learn_and_evaluate(env,
                        test_env,
                        agent,
-                       num_tests,
-                       num_test_games,
+                       test_agent,
                        test_points,
-                       agent_id=0,
-                       store_weights=False):
+                       num_games_per_test,
+                       agent_id=0):
+    num_tests = len(test_points)
+    env.reset()
+    test_results = np.zeros((num_tests, num_games_per_test))
+    test_index = 0
+    while test_index < num_tests:
+        print("agent.step: ", agent.step)
+
+        # TEST
+        if num_tests > 0 and agent.step in test_points:
+            test_agent.policy_weights = agent.copy_current_policy_weights()
+            test_results[test_index, :] = evaluate(test_env, test_agent, num_games_per_test)
+            print("Agent", agent_id, "was testing: ", test_index + 1, " out of ", num_tests, " tests. \n Mean: ", np.mean(test_results[test_index, :]), ", Median: ", np.median(test_results[test_index, :]))
+            test_index += 1
+
+        # LEARN
+        # Make step in the environment (NOT needed for CBMPI / BatchRollout)
+        if agent.rollout_handler.name == "OnlineRollout":
+            if env.game_over:  # This is only relevant for online algorithms (does not have a side-effect on CBMPI-type algos, though.)
+                print("Game was over. Env had to be reset!")
+                env.reset()
+            after_state, action_index, action_features = agent.choose_action(start_state=env.current_state,
+                                                                             start_tetromino=env.generative_model)
+            env.make_step(after_state)
+            agent.learn(action_features=action_features, action_index=action_index)
+        elif agent.rollout_handler.name == "BatchRollout":
+            agent.learn()
+
+        agent.update_steps()
+    return test_results
+
+
+def learn_and_evaluate_old(env,
+                           test_env,
+                           agent,
+                           num_tests,
+                           num_games_per_test,
+                           test_points,
+                           agent_id=0,
+                           store_weights=False):
+
+        """
+        Older, more involved version that allows to keep track of tested weights.
+        """
         assert(agent.name in ["mlearning", "hierarchical_learning", "cbmpi"])
         env.reset()
         if agent.name == "cbmpi":
@@ -20,7 +61,7 @@ def learn_and_evaluate(env,
         else:
             test_agent = ConstantAgent(policy_weights=np.ones(env.num_features, dtype=np.float64),
                                        feature_directors=2*(np.random.binomial(1, 0.5, 8) - 0.5))
-        test_results = np.zeros((num_tests, num_test_games))
+        test_results = np.zeros((num_tests, num_games_per_test))
         tested_weights = np.zeros((num_tests, env.num_features))
         if store_weights:
             weights_storage = np.expand_dims(agent.policy_weights * agent.copy_current_feature_directors(), axis=0)
@@ -44,7 +85,7 @@ def learn_and_evaluate(env,
                     print("test_weights * test_directors", test_weights * test_directors)
                 tested_weights[test_index] = test_weights
                 print("Agent", agent_id, "is TESTING: ", test_index + 1, " out of ", num_tests, " tests.")
-                test_results[test_index, :] = evaluate(test_env, test_agent, num_test_games)
+                test_results[test_index, :] = evaluate(test_env, test_agent, num_games_per_test)
                 print("Agent", agent_id, "Mean: ", np.mean(test_results[test_index, :]), ", Median: ", np.median(test_results[test_index, :]))
                 test_index += 1
 
@@ -63,12 +104,10 @@ def learn_and_evaluate(env,
                 if agent.name in ["mlearning", "hierarchical_learning"]:
                     agent.append_data(action_features=action_features, action_index=action_index)
                     agent.learn(action_features=action_features, action_index=action_index)
-                    if store_weights:
-                        weights_storage = np.vstack((weights_storage, agent.policy_weights.copy() * agent.copy_current_feature_directors()))
                 elif agent.name == "cbmpi":
                     agent.learn()
-                # print("self.agent.mlogit_data.choice_set_counter: " + str(agent.mlogit_data.choice_set_counter))
-                # print("self.agent.mlogit_data.current_number_of_choice_sets: " + str(agent.mlogit_data.current_number_of_choice_sets))
+                if store_weights:
+                    weights_storage = np.vstack((weights_storage, agent.policy_weights.copy() * agent.copy_current_feature_directors()))
             agent.update_steps()
         if store_weights:
             return test_results, tested_weights, weights_storage

@@ -56,7 +56,7 @@ def p_loop(p, seed, plot_individual=False, return_action_count=False):
                                                plot_analysis_fc=plot_analysis,
                                                test_every=p.test_every,
                                                num_tests=p.num_tests,
-                                               num_test_games=p.num_test_games,
+                                               num_games_per_test=p.num_games_per_test,
                                                test_points=p.test_points,
                                                test_environment=test_environment,
                                                testing_time=testing_time,
@@ -106,7 +106,7 @@ def cbmpi_loop(p, seed, D):
     testing_time = 0
     test_results_ix, testing_time_ix, tested_weights_ix = environment.play_cbmpi(testing_time=testing_time,
                                                                                  num_tests=p.num_tests,
-                                                                                 num_test_games=p.num_test_games,
+                                                                                 num_games_per_test=p.num_games_per_test,
                                                                                  test_points=p.test_points,
                                                                                  test_environment=test_environment,
                                                                                  hard_test=p.hard_test)

@@ -167,9 +167,9 @@ class Tetris:
     #         self.game_over = self.current_state.terminal_state
     #     return self.cleared_lines
 
-    # def play_cbmpi(self, testing_time=0, num_tests=1, num_test_games=0, test_points=None, test_environment=None, hard_test=False):
+    # def play_cbmpi(self, testing_time=0, num_tests=1, num_games_per_test=0, test_points=None, test_environment=None, hard_test=False):
     #     self.reset()
-    #     test_results = np.zeros((num_tests, num_test_games))
+    #     test_results = np.zeros((num_tests, num_games_per_test))
     #     tested_weights = np.zeros((num_tests, self.num_features))
     #     tested_value_weights = np.zeros((num_tests, self.agent.num_value_features + 1))
     #
@@ -192,7 +192,7 @@ class Tetris:
     #             testing_time_start = time.time()
     #             if self.verbose:
     #                 print("TESTING: ", test_index + 1, " out of ", num_tests, " tests.")
-    #             for game_ix in range(num_test_games):
+    #             for game_ix in range(num_games_per_test):
     #                 test_results[test_index, game_ix] = test_environment.test_agent(hard_test=hard_test)
     #                 if self.verbose:
     #                     print("Game ", game_ix, " had ", test_results[test_index, game_ix], " cleared lines.")
@@ -217,11 +217,11 @@ class Tetris:
     #         print("tested_value_weights", tested_value_weights[index])
     #     return tested_weights, tested_value_weights
     #
-    # def play_hierarchical_learning(self, testing_time, plots_path, plot_analysis_fc, test_every=0, num_tests=1, num_test_games=0,
+    # def play_hierarchical_learning(self, testing_time, plots_path, plot_analysis_fc, test_every=0, num_tests=1, num_games_per_test=0,
     #                                test_points=None, test_environment=None, episode=0, agent_ix=0, store_features=False):
     #     self.reset()
     #     # self.agent.reset_agent()
-    #     test_results = np.zeros((num_tests, num_test_games))
+    #     test_results = np.zeros((num_tests, num_games_per_test))
     #     tested_weights = np.zeros((num_tests, self.num_features))
     #     weights_storage = np.expand_dims(self.agent.policy_weights, axis=0)
     #     if num_tests == 0:
@@ -236,7 +236,7 @@ class Tetris:
     #             print("tested_weights", tested_weights)
     #             testing_time_start = time.time()
     #             print("TESTING: ", test_index + 1, " out of ", num_tests, " tests.")
-    #             for game_ix in range(num_test_games):
+    #             for game_ix in range(num_games_per_test):
     #                 test_results[test_index, game_ix] = test_environment.test_agent()
     #                 print("Game ", game_ix, " had ", test_results[test_index, game_ix], " cleared lines.")
     #             print("Mean: ", np.mean(test_results[test_index, :]), ", Median: ", np.median(test_results[test_index, :]))

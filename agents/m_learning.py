@@ -93,6 +93,9 @@ class MLearning:
         self.max_batch_size = max_batch_size
         self.step_since_last_learned = 0
 
+    def copy_current_policy_weights(self):
+        return self.policy_weights.copy() * self.feature_directors.copy()
+
     def update_steps(self):
         self.step += 1
         self.step_in_current_phase += 1
@@ -220,6 +223,12 @@ class HierarchicalLearning(MLearning):
         assert len(self.gamma_per_phase) == self.num_phases
         assert len(self.append_data_per_phase) == self.num_phases
 
+    def copy_current_policy_weights(self):
+        if self.current_phase == "learn_directions":
+            return self.policy_weights.copy() * self.learned_directions.copy()
+        elif self.current_phase == "learn_weights":
+            return self.policy_weights.copy() * self.feature_directors.copy()
+
     def copy_current_feature_directors(self):
         if self.current_phase == "learn_directions":
             return self.learned_directions.copy()
@@ -243,6 +252,7 @@ class HierarchicalLearning(MLearning):
     #         return "max_util"
 
     def learn(self, action_features, action_index):
+        self.append_data(action_features, action_index)
         if self.current_phase in ["learn_directions", "learn_order"]:  # self.phase == "learn_directions"
             chosen_action_features = action_features[action_index]
             remaining_action_features = np.delete(arr=action_features, obj=action_index, axis=0)
