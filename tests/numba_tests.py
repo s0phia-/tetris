@@ -15,7 +15,7 @@ num_columns = np.int64(10)
 Advanced list indexing
 """
 
-# @njit
+@njit
 def with_integers():
     l = [1, 2, 3]
 
@@ -31,14 +31,14 @@ WEIRD: 1s seem to be slightly faster than Trues...
 
 """
 
-# @njit
+@njit
 def update_with_bool():
     arr = np.zeros(100000000, dtype=np.bool_)
     for ix in range(len(arr)):
         arr[ix] = True
     return arr
 
-# @njit
+@njit
 def update_with_one():
     arr = np.zeros(100000000, dtype=np.bool_)
     for ix in range(len(arr)):
@@ -64,14 +64,14 @@ result: sorta equal...
 """
 
 arr = np.random.random(100000000)
-# @njit
+@njit
 def f_enumerate(arr):
     a = 0
     for ix, con in enumerate(arr):
         a += con
     return a
 
-# @njit
+@njit
 def f_range(arr):
     a = 0
     for ix in range(len(arr)):
@@ -97,7 +97,7 @@ print(e-s)
 """
 No argument names.... need all optional arguments!
 """
-# @njit
+@njit
 def np_arange():
     a = np.arange(1, 5, 1, np.int64)
     return a
@@ -122,7 +122,7 @@ def access_out_of_bounds_index():
 access_out_of_bounds_index()
 
 
-# @njit
+@njit
 def JITTED_access_out_of_bounds_index():
     arr = np.zeros(5)
     arr[0] = 1
@@ -158,7 +158,7 @@ bools are twice as fast as integers,
 
 """
 
-# @njit
+@njit
 def check_a_lot(input):
     a = 0
     for i in input:
@@ -219,7 +219,7 @@ Only np.int64 is reasonably fast
 
 """
 
-# # @njit
+# @njit
 # def check_a_lot_2(input):
 #     a = 0
 #     for i in input:
@@ -288,7 +288,7 @@ i32 = np.random.randint(0, 2, num, dtype=np.int32)
 np.random.seed(1)
 i8 = np.random.randint(0, 2, num, dtype=np.int64)
 
-# @njit
+@njit
 def sum_a_lot(input):
     acc = np.bool_(0)
     for i in input:
@@ -350,7 +350,7 @@ spec = [
 ]
 
 
-# @jitclass(spec)
+@jitclass(spec)
 class AllInClass:
     def __init__(self):
         self.acc = 0
@@ -363,7 +363,7 @@ class AllInClass:
         return self.acc
 
 
-# @jitclass(spec)
+@jitclass(spec)
 class NoAttributeClass:
     def __init__(self):
         self.bla = 0
@@ -385,7 +385,7 @@ class OutSourceClass:
 
 
 
-# @njit
+@njit
 def count_a_lot():
     acc = 0
     for i in range(50000000):
@@ -435,7 +435,7 @@ spec = [
 
 
 
-# @jitclass(spec)
+@jitclass(spec)
 class AllInClass:
     def __init__(self):
         self.acc = np.array([0])
@@ -448,7 +448,7 @@ class AllInClass:
         return self.acc
 
 
-# @jitclass(spec)
+@jitclass(spec)
 class ShallowCopyClass:
     def __init__(self):
         self.bla = 0
@@ -462,7 +462,7 @@ class ShallowCopyClass:
         return acc
 
 
-# @jitclass(spec)
+@jitclass(spec)
 class DeepCopyClass:
     def __init__(self):
         self.bla = 0
@@ -476,7 +476,7 @@ class DeepCopyClass:
         return acc
 
 
-# @jitclass(spec)
+@jitclass(spec)
 class OutSourceClass:
     def __init__(self):
         self.acc = np.array([0])
@@ -486,7 +486,7 @@ class OutSourceClass:
         return count_a_lot(self.acc)
 
 
-# @njit
+@njit
 def count_a_lot(acc):
     for i in range(1000000000):
         acc[0] += 1
@@ -542,7 +542,7 @@ setup = '''
 import numpy as np
 from numba import njit
 
-# @njit
+@njit
 def numba_any(arr):
     found = False
     i = 0
@@ -555,7 +555,7 @@ def numba_any(arr):
 
 
 
-# @njit
+@njit
 def numba_any_break(arr):
     found = False
     for i in arr:
@@ -582,7 +582,7 @@ timeit.timeit('numba_any_break(arr)', setup=setup, number=10000000)
 # import numpy as np
 # from numba import njit
 #
-# # @njit
+# @njit
 # def numba_any(arr):
 #     found = False
 #     i = 0
@@ -595,7 +595,7 @@ timeit.timeit('numba_any_break(arr)', setup=setup, number=10000000)
 #
 #
 #
-# # @njit
+# @njit
 # def numba_any_break(arr):
 #     found = False
 #     for i in arr:

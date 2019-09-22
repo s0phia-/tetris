@@ -10,7 +10,7 @@ time_id = datetime.now().strftime('%Y_%m_%d_%H_%M')
 np.random.seed(1)
 
 
-# @njit
+@njit
 def evaluate(env, agent, num_runs):
     np.random.seed(1)
     rewards = np.zeros(num_runs, dtype=np.int64)

@@ -4,6 +4,7 @@ from tetris.utils import Bunch
 from tetris import state
 import numpy as np
 from numba import njit
+import glob
 
 
 def create_directories(run_id):
@@ -68,7 +69,17 @@ def load_rollout_state_population(p, max_samples, print_average_height=False):
     return rollout_population
 
 
-# @njit(fastmath=True, cache=False)
+def clean_up_cmaesout():
+    file_list = glob.glob('output/cmaesout*.dat')
+    print("Existing cmaes file list", file_list)
+    for file_path in file_list:
+        try:
+            os.remove(file_path)
+        except OSError:
+            print("Error while deleting file", file_path)
+
+
+@njit(fastmath=True, cache=False)
 def calc_lowest_free_rows(rep):
     num_rows, n_cols = rep.shape
     lowest_free_rows = np.zeros(n_cols, dtype=np.int64)

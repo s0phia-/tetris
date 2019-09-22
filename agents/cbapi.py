@@ -37,27 +37,14 @@ class Cbapi:
         self.step += 1
 
     def learn(self, *args, **kwargs):
-        state_features, state_values, state_action_features, state_action_values, did_rollout, num_available_actions = \
-            self.rollout_handler.perform_rollouts(self.policy_weights, self.value_weights, self.generative_model)
+        # state_features, state_values, state_action_features, state_action_values, did_rollout, num_available_actions = \
+        #     self.rollout_handler.perform_rollouts(self.policy_weights, self.value_weights, self.generative_model)
+        # print("Rollouts")
+        rollout = self.rollout_handler.perform_rollouts(self.policy_weights, self.value_weights, self.generative_model)
+        # print("Value approximation")
         if self.value_function_approximator.is_approximator:
-            self.value_weights = self.value_function_approximator.fit(state_features, state_values)
-        self.policy_weights = self.policy_approximator.fit(state_action_features, state_action_values, did_rollout, num_available_actions)
+            self.value_weights = self.value_function_approximator.fit(**rollout)
+        # self.policy_weights = self.policy_approximator.fit(state_action_features, state_action_values, did_rollout, num_available_actions)
+        # print("Policy approximation")
+        self.policy_weights = self.policy_approximator.fit(**rollout)
 
-
-# class Cbapi:
-#     """
-#     This should become a general classification-based RL algorithm in the sense of
-#     Lagoudakis & Parr (2003), that is, using rollouts and directly approximating
-#     the policy using a policy_approximator state ---> action
-#     """
-#     def __init__(self, classifier):
-#         self.classifier = classifier
-#
-#     def choose_action(self):
-#         pass
-#
-#     def learn(self):
-#         pass
-#
-#     def append_data(self):
-#         pass

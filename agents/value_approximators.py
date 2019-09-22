@@ -23,8 +23,8 @@ class LinearFunction:
         self.lin_reg.coef_ = np.zeros(self.num_value_features)
         self.lin_reg.intercept_ = 0.
 
-    def fit(self, state_features, state_values):
-        self.lin_reg.fit(state_features, state_values)
+    def fit(self, **rollout):
+        self.lin_reg.fit(rollout['state_features'], rollout['state_values'])
         value_weights = np.hstack((self.lin_reg.intercept_, self.lin_reg.coef_))
         return value_weights
 

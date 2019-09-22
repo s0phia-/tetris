@@ -204,7 +204,7 @@ class CbmpiOld:
         return loss
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def policy_loss_function(pol_weights, N, did_rollout, state_action_features, num_available_actions,
                          state_action_values):
     loss = 0.
@@ -229,7 +229,7 @@ def policy_loss_function(pol_weights, N, did_rollout, state_action_features, num
     return loss
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def action_value_roll_out(start_state,
                           m,
                           gamma,
@@ -278,7 +278,7 @@ def action_value_roll_out(start_state,
     return action_value_estimates, state_action_features
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def value_roll_out(start_state,
                    m,
                    gamma,
@@ -315,7 +315,7 @@ def value_roll_out(start_state,
     return value_estimate
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def choose_action_in_rollout(available_after_states, policy_weights,
                              # rollout_dom_filter, rollout_cumu_dom_filter,
                              # feature_directors,

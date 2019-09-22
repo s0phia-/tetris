@@ -13,7 +13,7 @@ spec_agent = [
 ]
 
 
-# @jitclass(spec_agent)
+@jitclass(spec_agent)
 class ConstantAgent:
     #  feature_directors=np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
     def __init__(self, policy_weights, feature_type="bcts", feature_directors=np.ones(8, dtype=np.float64)):

@@ -412,7 +412,7 @@ class HierarchicalLearning(MLearning):
         #                                         self.learned_directions)
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def choose_action_using_rollouts(start_state, start_tetromino, rollout_mechanism,
                                  rollout_length, generative_model, policy_weights,
                                  dom_filter, cumu_dom_filter, rollout_dom_filter, rollout_cumu_dom_filter,
@@ -461,7 +461,7 @@ def choose_action_using_rollouts(start_state, start_tetromino, rollout_mechanism
     return children_states[child_index], child_index, action_features
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def roll_out(start_state, rollout_length, rollout_mechanism,
              generative_model, policy_weights,
              rollout_dom_filter, rollout_cumu_dom_filter,
@@ -496,7 +496,7 @@ def roll_out(start_state, rollout_length, rollout_mechanism,
     return value_estimate
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def choose_max_util_action_in_rollout(available_after_states, policy_weights,
                                       rollout_dom_filter, rollout_cumu_dom_filter,
                                       feature_directors, num_features):
@@ -521,7 +521,7 @@ def choose_max_util_action_in_rollout(available_after_states, policy_weights,
     return move
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def choose_greedy_if_reward_else_random_action_in_rollout(available_after_states, policy_weights,
                                                           rollout_dom_filter, rollout_cumu_dom_filter,
                                                           feature_directors, num_features):
@@ -562,7 +562,7 @@ def choose_greedy_if_reward_else_random_action_in_rollout(available_after_states
     return move
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def choose_greedy_if_reward_else_max_util_from_learned_directions_action_in_rollout(
         available_after_states, policy_weights,
         rollout_dom_filter, rollout_cumu_dom_filter,
@@ -611,7 +611,7 @@ def choose_greedy_if_reward_else_max_util_from_learned_directions_action_in_roll
     return move
 
 
-# @njit
+@njit
 def flip_positive_direction_counts(positive_direction_counts, meaningful_comparisons, feature_directors):
     for ix in range(len(positive_direction_counts)):
         if feature_directors[ix] == -1.:

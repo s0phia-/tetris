@@ -68,21 +68,21 @@ def print_tetromino(tetromino_index):
       ██"""
     return string
 
-# @njit(cache=False)
+@njit(cache=False)
 def one_hot_vector(one_index, length):
     out = np.zeros(length)
     out[one_index] = 1.
     return out
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def vert_one_hot(one_index, length):
     out = np.zeros((length, 1))
     out[one_index] = 1.
     return out
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def compute_action_probabilities(action_features, weights, temperature):
     utilities = action_features.dot(weights) / temperature
     utilities = utilities - np.max(utilities)
@@ -91,14 +91,14 @@ def compute_action_probabilities(action_features, weights, temperature):
     return probabilities
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def grad_of_log_action_probabilities(features, probabilities, action_index):
     features_of_chosen_action = features[action_index]
     grad = features_of_chosen_action - features.T.dot(probabilities)
     return grad
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def softmax(U):
     ps = np.exp(U - np.max(U))
     ps /= np.sum(ps)
@@ -178,13 +178,14 @@ def plot_individual_agent(plots_path, tested_weights, test_results, agent_ix, x_
     feature_names = ['rows_with_holes', 'column_transitions', 'holes', 'landing_height', 'cumulative_wells',
                      'row_transitions', 'eroded', 'hole_depth']
     # Compute tested_weight paths
-    fig1, ax1 = plt.subplots()
-    for ix in range(tested_weights.shape[1]):
-        ax1.plot(x_axis, tested_weights[:, ix], label=feature_names[ix])
-    plt.legend()
-    fig1.show()
-    fig1.savefig(os.path.join(plots_path, "weight_paths_tested" + str(agent_ix)))
-    plt.close()
+    if tested_weights is not None:
+        fig1, ax1 = plt.subplots()
+        for ix in range(tested_weights.shape[1]):
+            ax1.plot(x_axis, tested_weights[:, ix], label=feature_names[ix])
+        plt.legend()
+        fig1.show()
+        fig1.savefig(os.path.join(plots_path, "weight_paths_tested" + str(agent_ix)))
+        plt.close()
 
     # # Compute weights_storage paths
     # fig1, ax1 = plt.subplots()
@@ -219,7 +220,7 @@ def plot_individual_agent(plots_path, tested_weights, test_results, agent_ix, x_
     # Compute learning curves (mean and median)
     mean_array = np.mean(test_results, axis=1)
     median_array = np.median(test_results, axis=1)
-    max_array = np.max(test_results, axis=1)
+    # max_array = np.max(test_results, axis=1)
 
     # Plot and save learning curves.
     fig1, ax1 = plt.subplots()

@@ -115,7 +115,7 @@ def learn_and_evaluate_old(env,
             return test_results, tested_weights  # , weights_storage
 
 
-# @njit(cache=False)
+@njit(cache=False)
 def evaluate(env, agent, num_runs):
     rewards = np.zeros(num_runs, dtype=np.int64)
     for i in range(num_runs):
