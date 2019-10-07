@@ -63,6 +63,7 @@ class BatchRollout:
         for ix, rollout_state in enumerate(self.rollout_set):
             # TODO: implement self.rollouts_per_action...    however, in Scherrer et al. (2015) this always values 1
             # Rollouts for state-value function estimation
+
             state_features[ix, :] = rollout_state.get_features_pure(True)[1:]  # Don't store intercept
             state_values[ix] = value_roll_out(rollout_state, self.rollout_length, self.gamma, generative_model,
                                               policy_weights, value_weights, self.num_features)

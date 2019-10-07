@@ -21,7 +21,9 @@ def learn_and_evaluate(env,
         if num_tests > 0 and agent.step in test_points:
             test_agent.policy_weights = agent.copy_current_policy_weights()
             test_results[test_index, :] = evaluate(test_env, test_agent, num_games_per_test)
-            print("Agent", agent_id, "was testing: ", test_index + 1, " out of ", num_tests, " tests. \n Mean: ", np.mean(test_results[test_index, :]), ", Median: ", np.median(test_results[test_index, :]))
+            print("Agent", agent_id, "was testing: ", test_index + 1, " out of ", num_tests, " tests. \n",
+                  "Mean: ", np.mean(test_results[test_index, :]),
+                  ", Median: ", np.median(test_results[test_index, :]))
             test_index += 1
 
         # LEARN

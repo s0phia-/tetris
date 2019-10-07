@@ -29,8 +29,9 @@ class MultinomialLogisticRegression:
         self.mlogit_data.delete_data()
         for ix in range(len(rollout['state_action_values'])):
             if rollout['did_rollout'][ix]:
-                action_features = rollout['state_action_features'][ix][:rollout['num_available_actions'][ix], :]
-                action_values = rollout['state_action_values'][ix][:rollout['num_available_actions'][ix]]
+                num_available_actions_ix = rollout['num_available_actions'][ix]
+                action_features = rollout['state_action_features'][ix][:num_available_actions_ix, :]
+                action_values = rollout['state_action_values'][ix][:num_available_actions_ix]
                 choice_index = np.random.choice(np.flatnonzero(action_values == np.max(action_values)))
                 self.mlogit_data.push(features=action_features,
                                       choice_index=choice_index,
@@ -84,6 +85,7 @@ class CmaesClassifier:
         #                                            inopts={'verb_disp': 0,
         #                                                    'verb_filenameprefix': "output/cmaesout" + str(self.seed),
         #                                                    'popsize': self.n})
+        # Have to define new one everytime, otherwise takes old parameters (stuck in local opt?)
         self.cmaes = cma.CMAEvolutionStrategy(
             np.random.normal(loc=0, scale=1, size=self.num_features),
             self.cmaes_var,
@@ -102,7 +104,11 @@ class CmaesClassifier:
 
 
 @njit(cache=False)
-def policy_loss_function(pol_weights, N, did_rollout, state_action_features, num_available_actions,
+def policy_loss_function(pol_weights,
+                         N,
+                         did_rollout,
+                         state_action_features,
+                         num_available_actions,
                          state_action_values):
     loss = 0.
     number_of_samples = 0
