@@ -45,6 +45,12 @@ class Tetromino:
     def next_tetromino(self):
         self.current_tetromino = np.random.choice(self.tetromino_names)
 
+    def copy_with_same_current_tetromino(self):
+        current_tetromino = self.current_tetromino
+        new_tetromino_object = Tetromino(self.feature_type, self.num_features, self.num_columns)
+        new_tetromino_object.current_tetromino = current_tetromino
+        return new_tetromino_object
+
     def get_after_states(self, current_state):
         # This version of get_after_states() reintroduces the possibility that
         # a tetromino is placed such it is legal AFTER lines are cleared (but not BEFORE).

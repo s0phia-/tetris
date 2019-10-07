@@ -11,12 +11,14 @@ class Cbapi:
     def __init__(self,
                  policy_approximator,
                  value_function_approximator,
+                 use_state_values,
                  generative_model,
                  rollout_handler,
                  verbose):
         self.name = f"cbapi_{policy_approximator.name}_{value_function_approximator.name}_{rollout_handler.name}"
         self.policy_approximator = policy_approximator
         self.value_function_approximator = value_function_approximator
+        self.use_state_values = use_state_values
         self.generative_model = generative_model
         self.rollout_handler = rollout_handler
 
@@ -37,14 +39,16 @@ class Cbapi:
         self.step += 1
 
     def learn(self, *args, **kwargs):
-        # state_features, state_values, state_action_features, state_action_values, did_rollout, num_available_actions = \
-        #     self.rollout_handler.perform_rollouts(self.policy_weights, self.value_weights, self.generative_model)
-        # print("Rollouts")
-        rollout = self.rollout_handler.perform_rollouts(self.policy_weights, self.value_weights, self.generative_model)
-        # print("Value approximation")
-        if self.value_function_approximator.is_approximator:
+        # Rollouts
+        rollout = self.rollout_handler.perform_rollouts(self.policy_weights,
+                                                        self.value_weights,
+                                                        self.generative_model,
+                                                        self.use_state_values)
+
+        # Value approximation
+        if self.use_state_values:
             self.value_weights = self.value_function_approximator.fit(**rollout)
-        # self.policy_weights = self.policy_approximator.fit(state_action_features, state_action_values, did_rollout, num_available_actions)
-        # print("Policy approximation")
+
+        # Policy approximation
         self.policy_weights = self.policy_approximator.fit(**rollout)
 

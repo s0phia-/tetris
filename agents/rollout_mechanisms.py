@@ -26,25 +26,19 @@ class OnlineRollout:
 class BatchRollout:
     def __init__(self,
                  rollout_state_population,
-                 budget,
                  rollout_length,
                  rollouts_per_action,
+                 rollout_set_size,
                  num_features,
                  num_value_features,
-                 rollout_set_size=None,
                  gamma=1):
         self.name = "BatchRollout"
         self.rollout_state_population = rollout_state_population
         self.rollout_set = None  # use self.construct_rollout_set()
-        self.budget = budget
         self.rollout_length = rollout_length
         self.rollouts_per_action = rollouts_per_action
-        if rollout_set_size is None:
-            self.rollout_set_size = int(self.budget / self.rollouts_per_action / (self.rollout_length+1) / 32)
-            print("Given the budget of", self.budget, " the rollout set size will be:", self.rollout_set_size)
-        else:
-            self.rollout_set_size = rollout_set_size  # number of states sampled from rollout_set D_k
-            assert(self.budget == self.rollout_set_size * self.rollouts_per_action * (self.rollout_length+1) * 32)
+        self.rollout_set_size = rollout_set_size
+        print("The budget is: ", self.rollout_set_size * self.rollouts_per_action * (self.rollout_length+1) * 32)
         self.gamma = gamma
         self.num_features = num_features
         self.num_value_features = num_value_features
@@ -52,7 +46,7 @@ class BatchRollout:
     def construct_rollout_set(self):
         self.rollout_set = np.random.choice(a=self.rollout_state_population, size=self.rollout_set_size, replace=False)
 
-    def perform_rollouts(self, policy_weights, value_weights, generative_model):
+    def perform_rollouts(self, policy_weights, value_weights, generative_model, use_state_values):
         self.construct_rollout_set()
         state_features = np.zeros((self.rollout_set_size, self.num_value_features), dtype=np.float)
         state_values = np.zeros(self.rollout_set_size, dtype=np.float)
@@ -61,17 +55,21 @@ class BatchRollout:
         num_available_actions = np.zeros(self.rollout_set_size, dtype=np.int64)
         did_rollout = np.ones(self.rollout_set_size, dtype=bool)
         for ix, rollout_state in enumerate(self.rollout_set):
-            # TODO: implement self.rollouts_per_action...    however, in Scherrer et al. (2015) this always values 1
-            # Rollouts for state-value function estimation
+            # Sample tetromino for each rollout state (same for state and state-action rollouts)
+            generative_model.next_tetromino()
 
-            state_features[ix, :] = rollout_state.get_features_pure(True)[1:]  # Don't store intercept
-            state_values[ix] = value_roll_out(rollout_state, self.rollout_length, self.gamma, generative_model,
-                                              policy_weights, value_weights, self.num_features)
+            if use_state_values:
+                # Rollouts for state-value function estimation
+                state_features[ix, :] = rollout_state.get_features_pure(True)[1:]  # Don't store intercept
+                state_values[ix] = value_roll_out(rollout_state, self.rollout_length, self.gamma,
+                                                  generative_model.copy_with_same_current_tetromino(),
+                                                  policy_weights, value_weights, self.num_features)
 
             # Rollouts for action-value function estimation
             actions_value_estimates, state_action_features_ix = \
-                action_value_roll_out(rollout_state, self.rollout_length, self.gamma, generative_model,
-                                      policy_weights, value_weights, self.num_features)
+                action_value_roll_out(rollout_state, self.rollout_length, self.rollouts_per_action, self.gamma,
+                                      generative_model.copy_with_same_current_tetromino(),
+                                      policy_weights, value_weights, self.num_features, use_state_values)
             num_av_acts = len(actions_value_estimates)
             num_available_actions[ix] = num_av_acts
             state_action_values[ix, :num_av_acts] = actions_value_estimates
@@ -87,15 +85,18 @@ class BatchRollout:
                     did_rollout=did_rollout,
                     num_available_actions=num_available_actions)
 
+
 @njit(cache=False)
 def action_value_roll_out(start_state,
-                          m,
+                          rollout_length,
+                          rollouts_per_action,
                           gamma,
                           generative_model,
                           policy_weights,
                           value_weights,
-                          num_features):
-    generative_model.next_tetromino()
+                          num_features,
+                          use_state_values):
+    # generative_model.next_tetromino()
     child_states = generative_model.get_after_states(start_state)
     num_child_states = len(child_states)
     action_value_estimates = np.zeros(num_child_states)
@@ -105,33 +106,36 @@ def action_value_roll_out(start_state,
         return action_value_estimates, state_action_features
     for child_ix in range(num_child_states):
         state_tmp = child_states[child_ix]
-        state_action_features[child_ix] = state_tmp.get_features_pure(False) # order_by=None, standardize_by=None
-        cumulative_reward = state_tmp.n_cleared_lines
-        # print("Starting new action rollout")
-        game_ended = False
-        count = 0
-        while not game_ended and count < m:  # there are m rollouts
-            generative_model.next_tetromino()
-            available_after_states = generative_model.get_after_states(state_tmp)
-            num_after_states = len(available_after_states)
-            if num_after_states == 0:
-                game_ended = True
-            else:
-                state_tmp = choose_action_in_rollout(available_after_states, policy_weights, num_features)
-                cumulative_reward += (gamma ** count) * state_tmp.n_cleared_lines
-            count += 1
+        start_reward = state_tmp.n_cleared_lines
+        state_action_features[child_ix] = state_tmp.get_features_pure(False)  # order_by=None, standardize_by=None
+        for rollout_ix in range(rollouts_per_action):
+            cumulative_reward = start_reward
+            # print("Starting new action rollout")
+            game_ended = False
+            count = 0
+            while not game_ended and count < rollout_length:  # there are rollout_length rollouts
+                generative_model.next_tetromino()
+                available_after_states = generative_model.get_after_states(state_tmp)
+                num_after_states = len(available_after_states)
+                if num_after_states == 0:
+                    game_ended = True
+                else:
+                    state_tmp = choose_action_in_rollout(available_after_states, policy_weights, num_features)
+                    cumulative_reward += (gamma ** count) * state_tmp.n_cleared_lines
+                count += 1
 
-        # One more (the (m+1)-th) for truncation value!
-        if not game_ended:
-            generative_model.next_tetromino()
-            available_after_states = generative_model.get_after_states(state_tmp)
-            num_after_states = len(available_after_states)
-            if num_after_states > 0:
-                state_tmp = choose_action_in_rollout(available_after_states, policy_weights, num_features)
-                final_state_features = state_tmp.get_features_pure(True)
-                cumulative_reward += (gamma ** count) * final_state_features.dot(value_weights)
+            # One more (the (rollout_length+1)-th) for truncation value!
+            if use_state_values and not game_ended:
+                generative_model.next_tetromino()
+                available_after_states = generative_model.get_after_states(state_tmp)
+                num_after_states = len(available_after_states)
+                if num_after_states > 0:
+                    state_tmp = choose_action_in_rollout(available_after_states, policy_weights, num_features)
+                    final_state_features = state_tmp.get_features_pure(True)
+                    cumulative_reward += (gamma ** count) * final_state_features.dot(value_weights)
 
-        action_value_estimates[child_ix] = cumulative_reward
+            action_value_estimates[child_ix] += cumulative_reward
+    action_value_estimates /= rollouts_per_action
     return action_value_estimates, state_action_features
 
 
@@ -147,7 +151,7 @@ def value_roll_out(start_state,
     state_tmp = start_state
     count = 0
     while not state_tmp.terminal_state and count < m:  # there are only (m-1) rollouts
-        generative_model.next_tetromino()
+        # generative_model.next_tetromino()
         available_after_states = generative_model.get_after_states(state_tmp)
         if len(available_after_states) == 0:
             return value_estimate
@@ -156,10 +160,11 @@ def value_roll_out(start_state,
                                              num_features)
         value_estimate += gamma ** count * state_tmp.n_cleared_lines
         count += 1
+        generative_model.next_tetromino()
 
     # One more (the m-th) for truncation value!
     if not state_tmp.terminal_state:
-        generative_model.next_tetromino()
+        # generative_model.next_tetromino()
         available_after_states = generative_model.get_after_states(state_tmp)
         if len(available_after_states) == 0:
             return value_estimate
