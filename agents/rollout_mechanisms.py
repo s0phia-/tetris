@@ -7,6 +7,7 @@ import gc
 import cma
 import time
 
+
 class OnlineRollout:
     def __init__(self,
                  rollout_length,
@@ -31,6 +32,7 @@ class BatchRollout:
                  rollout_set_size,
                  num_features,
                  num_value_features,
+                 reward_greedy,
                  gamma=1):
         self.name = "BatchRollout"
         self.rollout_state_population = rollout_state_population
@@ -42,6 +44,7 @@ class BatchRollout:
         self.gamma = gamma
         self.num_features = num_features
         self.num_value_features = num_value_features
+        self.reward_greedy = reward_greedy
 
     def construct_rollout_set(self):
         self.rollout_set = np.random.choice(a=self.rollout_state_population, size=self.rollout_set_size, replace=False)
@@ -63,13 +66,15 @@ class BatchRollout:
                 state_features[ix, :] = rollout_state.get_features_pure(True)[1:]  # Don't store intercept
                 state_values[ix] = value_roll_out(rollout_state, self.rollout_length, self.gamma,
                                                   generative_model.copy_with_same_current_tetromino(),
-                                                  policy_weights, value_weights, self.num_features)
+                                                  policy_weights, value_weights, self.num_features,
+                                                  self.reward_greedy)
 
             # Rollouts for action-value function estimation
             actions_value_estimates, state_action_features_ix = \
                 action_value_roll_out(rollout_state, self.rollout_length, self.rollouts_per_action, self.gamma,
                                       generative_model.copy_with_same_current_tetromino(),
-                                      policy_weights, value_weights, self.num_features, use_state_values)
+                                      policy_weights, value_weights, self.num_features, use_state_values,
+                                      self.reward_greedy)
             num_av_acts = len(actions_value_estimates)
             num_available_actions[ix] = num_av_acts
             state_action_values[ix, :num_av_acts] = actions_value_estimates
@@ -95,7 +100,8 @@ def action_value_roll_out(start_state,
                           policy_weights,
                           value_weights,
                           num_features,
-                          use_state_values):
+                          use_state_values,
+                          reward_greedy):
     # generative_model.next_tetromino()
     child_states = generative_model.get_after_states(start_state)
     num_child_states = len(child_states)
@@ -120,7 +126,7 @@ def action_value_roll_out(start_state,
                 if num_after_states == 0:
                     game_ended = True
                 else:
-                    state_tmp = choose_action_in_rollout(available_after_states, policy_weights, num_features)
+                    state_tmp = choose_action_in_rollout(available_after_states, policy_weights, num_features, reward_greedy)
                     cumulative_reward += (gamma ** count) * state_tmp.n_cleared_lines
                 count += 1
 
@@ -130,7 +136,7 @@ def action_value_roll_out(start_state,
                 available_after_states = generative_model.get_after_states(state_tmp)
                 num_after_states = len(available_after_states)
                 if num_after_states > 0:
-                    state_tmp = choose_action_in_rollout(available_after_states, policy_weights, num_features)
+                    state_tmp = choose_action_in_rollout(available_after_states, policy_weights, num_features, reward_greedy)
                     final_state_features = state_tmp.get_features_pure(True)
                     cumulative_reward += (gamma ** count) * final_state_features.dot(value_weights)
 
@@ -146,7 +152,8 @@ def value_roll_out(start_state,
                    generative_model,
                    policy_weights,
                    value_weights,
-                   num_features):
+                   num_features,
+                   reward_greedy):
     value_estimate = 0.0
     state_tmp = start_state
     count = 0
@@ -156,8 +163,7 @@ def value_roll_out(start_state,
         if len(available_after_states) == 0:
             return value_estimate
         state_tmp = choose_action_in_rollout(available_after_states, policy_weights,
-                                             # rollout_dom_filter, rollout_cumu_dom_filter,
-                                             num_features)
+                                             num_features, reward_greedy)
         value_estimate += gamma ** count * state_tmp.n_cleared_lines
         count += 1
         generative_model.next_tetromino()
@@ -169,8 +175,7 @@ def value_roll_out(start_state,
         if len(available_after_states) == 0:
             return value_estimate
         state_tmp = choose_action_in_rollout(available_after_states, policy_weights,
-                                             # rollout_dom_filter, rollout_cumu_dom_filter,
-                                             num_features)
+                                             num_features, reward_greedy)
         final_state_features = state_tmp.get_features_pure(True)  # order_by=None, standardize_by=None,
         # value_estimate += self.gamma ** count + final_state_features.dot(self.value_weights)
         value_estimate += (gamma ** count) * final_state_features.dot(value_weights)
@@ -179,10 +184,22 @@ def value_roll_out(start_state,
 
 @njit(cache=False)
 def choose_action_in_rollout(available_after_states, policy_weights,
-                             # rollout_dom_filter, rollout_cumu_dom_filter,
-                             # feature_directors,
-                             num_features):
+                             num_features, reward_greedy):
     num_states = len(available_after_states)
+    if reward_greedy:
+        rewards = np.zeros(num_states)
+        max_reward = 0
+        for ix, after_state in enumerate(available_after_states):
+            reward_of_after_state = after_state.n_cleared_lines
+            if reward_of_after_state > 0:
+                rewards[ix] = after_state.n_cleared_lines
+                if reward_of_after_state > max_reward:
+                    max_reward = reward_of_after_state
+        if max_reward > 0:
+            max_reward_indeces = np.where(rewards == max_reward)[0]
+            available_after_states = [available_after_states[i] for i in max_reward_indeces]
+            # action_features = action_features[max_reward_indeces]
+            num_states = len(available_after_states)
     action_features = np.zeros((num_states, num_features))
     for ix, after_state in enumerate(available_after_states):
         action_features[ix] = after_state.get_features_pure(False)  # , order_by=self.feature_order
