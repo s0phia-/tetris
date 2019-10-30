@@ -1,7 +1,3 @@
-import numpy as np
-import time
-
-
 class Cbapi:
     """
     This should become a general classification-based RL algorithm in the sense of
@@ -51,4 +47,8 @@ class Cbapi:
 
         # Policy approximation
         self.policy_weights = self.policy_approximator.fit(**rollout)
+
+        if self.verbose:
+            print("New value_weights: ", self.value_weights)
+            print("New policy_weights: ", self.policy_weights)
 

@@ -1,11 +1,7 @@
 import numpy as np
 from stew import StewMultinomialLogit, ChoiceSetData
-from tetris import tetromino
 from numba import njit
-import gc
 import cma
-import time
-from run import utils_run
 
 
 class MultinomialLogisticRegression:
@@ -15,7 +11,8 @@ class MultinomialLogisticRegression:
             self.num_features = 8
         else:
             raise ValueError("Only BCTS features are implemented!")
-        self.policy_weights = np.zeros(self.num_features)
+        # self.policy_weights = np.zeros(self.num_features)
+        self.policy_weights = np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
         self.regularization = regularization
 
         # TODO: include function arguments

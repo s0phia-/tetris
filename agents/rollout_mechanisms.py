@@ -1,11 +1,5 @@
 import numpy as np
-from stew import StewMultinomialLogit, ChoiceSetData
-from tetris import tetromino
 from numba import njit
-from sklearn.linear_model import LinearRegression
-import gc
-import cma
-import time
 
 
 class OnlineRollout:
@@ -33,7 +27,7 @@ class BatchRollout:
                  num_features,
                  num_value_features,
                  reward_greedy,
-                 gamma=1):
+                 gamma=0.9):
         self.name = "BatchRollout"
         self.rollout_state_population = rollout_state_population
         self.rollout_set = None  # use self.construct_rollout_set()

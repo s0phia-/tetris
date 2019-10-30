@@ -1,14 +1,4 @@
-import numpy as np
-from stew import StewMultinomialLogit, ChoiceSetData
-from tetris import tetromino
-from numba import njit
-from sklearn.linear_model import LinearRegression
-import gc
-import cma
 import time
-
-
-
 
 
 class Cbmpi:
