@@ -1,7 +1,8 @@
 import numpy as np
 from tetris import state, tetromino  # tetromino_old,
 import numba
-from numba import jitclass, bool_, int64
+from numba import bool_, int64
+from numba.experimental import jitclass
 
 
 specTetris = [
@@ -40,7 +41,6 @@ class Tetris:
                  num_features=8
                  ):
         """
-        
         :param num_columns: 
         :param num_rows:
         :param tetromino_size:

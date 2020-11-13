@@ -1,8 +1,8 @@
 import numpy as np
 from tetris.state import State, TerminalState
 import numba
-from numba import njit, jitclass, float64, int64, bool_, int64
-
+from numba import njit, float64, int64, bool_, int64
+from numba.experimental import jitclass
 
 spec_agent = [
     ('policy_weights', float64[:]),

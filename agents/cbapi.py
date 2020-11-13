@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class Cbapi:
     """
     This should become a general classification-based RL algorithm in the sense of
@@ -27,6 +30,8 @@ class Cbapi:
         self.is_learning = True
         self.step = 0
 
+        self.count_rollouts = 0
+
     def copy_current_policy_weights(self):
         return self.policy_weights.copy()
 
@@ -40,6 +45,10 @@ class Cbapi:
                                                         self.value_weights,
                                                         self.generative_model,
                                                         self.use_state_values)
+
+
+        # print(f"Mean eval'ed actions {np.mean(rollout['num_available_actions'])} for filter = {self.rollout_handler.use_dom}.")
+        # self.count_rollouts += np.sum(rollout["num_available_actions"])
 
         # Value approximation
         if self.use_state_values:

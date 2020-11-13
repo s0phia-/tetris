@@ -1,5 +1,5 @@
 import numpy as np
-from stew import StewMultinomialLogit, ChoiceSetData
+# from stew import StewMultinomialLogit, ChoiceSetData
 from numba import njit
 import cma
 

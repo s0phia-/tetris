@@ -1,6 +1,7 @@
 import numpy as np
 import numba
-from numba import njit, jitclass, float64, int64, bool_, int64
+from numba import njit, float64, int64, bool_, int64
+from numba.experimental import jitclass
 from tetris import state
 from numba.typed import List
 

@@ -111,7 +111,9 @@ def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_ax
     for test_results_ix in range(len(compare_results)):
         test_results = compare_results[test_results_ix]
         mean_array = np.mean(test_results, axis=(0, 2))
+        serr_array = np.std(test_results, axis=(0, 2)) / np.sqrt(compare_results[0].shape[0])
         ax1.plot(x_axis, mean_array, label=compare_ids[test_results_ix])
+        ax1.fill_between(x_axis, mean_array - serr_array, mean_array + serr_array, alpha=0.2)
 
     plt.title('Mean performance')
     plt.xlabel('Iteration')
@@ -150,19 +152,22 @@ def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_ax
     plt.close()
 
 
-def plot_learning_curve(plots_path, test_results, x_axis):
+def plot_learning_curve(plots_path, test_results, x_axis, suffix=""):
 
     mean_array = np.mean(test_results, axis=(0, 2))
     median_array = np.median(test_results, axis=(0, 2))
     max_array = np.max(test_results, axis=(0, 2))
+    serr_array = np.std(test_results, axis=(0, 2)) / np.sqrt(test_results[0].shape[0])
+
 
     # Plot and save learning curves.
     fig1, ax1 = plt.subplots()
     ax1.plot(x_axis, mean_array, label="mean")
-    ax1.plot(x_axis, median_array, label="median")
+    # ax1.plot(x_axis, median_array, label="median")
+    ax1.fill_between(x_axis, mean_array - serr_array, mean_array + serr_array, alpha=0.2)
     plt.legend()
     fig1.show()
-    fig1.savefig(os.path.join(plots_path, "mean_performance"))
+    fig1.savefig(os.path.join(plots_path, "mean_performance" + suffix))
     plt.close()
 
     # Plot and save learning curves.
@@ -170,7 +175,7 @@ def plot_learning_curve(plots_path, test_results, x_axis):
     ax1.plot(x_axis, max_array, label="max")
     plt.legend()
     fig1.show()
-    fig1.savefig(os.path.join(plots_path, "max_performance"))
+    fig1.savefig(os.path.join(plots_path, "max_performance"+ suffix))
     plt.close()
 
 

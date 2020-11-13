@@ -1,6 +1,7 @@
 import numpy as np
 import numba
-from numba import njit, jitclass, float64, bool_, int64
+from numba import njit, float64, bool_, int64
+from numba.experimental import jitclass
 
 
 spec = [
