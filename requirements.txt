@@ -1,0 +1,7 @@
+numpy
+scipy
+numba
+matplotlib
+scikit-learn
+cma
+statsmodels

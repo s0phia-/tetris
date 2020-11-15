@@ -9,6 +9,7 @@ import glob
 
 def create_directories(run_id):
     run_id_path = os.path.join("output", run_id)
+    print(f"This is the run_id_path {run_id_path}.")
     if not os.path.exists(run_id_path):
         os.makedirs(run_id_path)
     # model_save_name = os.path.join(dir_path, "model.pt")
