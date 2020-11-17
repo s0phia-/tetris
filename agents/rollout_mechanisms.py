@@ -319,17 +319,21 @@ def calculate_available_actions(rollout_state_population, generative_model, env)
     print("Calculate available actions with and without filters")
     num_av_acts = np.zeros(len(rollout_state_population))
     num_fil_av_acts = np.zeros(len(rollout_state_population))
+    feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
     for ix in range(len(rollout_state_population)):
-        print(ix)
+        # print(ix)
         generative_model.next_tetromino()
         child_states = generative_model.get_after_states(rollout_state_population[ix])
         num_child_states = len(child_states)
         num_av_acts[ix] = len(child_states)
 
         state_action_features = np.zeros((num_child_states, env.num_features), dtype=np.float_)
-        for ix in range(num_child_states):
-            state_action_features[ix] = child_states[ix].get_features_pure(False)  # , order_by=self.feature_order
-        feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
+        for child_ix in range(num_child_states):
+            state_action_features[child_ix] = child_states[child_ix].get_features_pure(False)  # , order_by=self.feature_order
+
         not_simply_dominated, not_cumu_dominated = dominance_filter(state_action_features * feature_directors,
                                                                     len_after_states=num_child_states)
-        not_cumu_dominated
+        num_fil_av_acts[ix] = np.sum(not_cumu_dominated)
+
+    print(f"The mean number of available actions was {np.mean(num_av_acts)}")
+    print(f"The mean number of FILTERED available actions was {np.mean(num_fil_av_acts)}")

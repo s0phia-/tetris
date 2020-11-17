@@ -63,8 +63,10 @@ def load_rollout_state_population(p, max_samples, print_average_height=False):
                                                       "bcts",  # feature_type=
                                                       False  # terminal_state=
                                                       ))
+                count += 1
+            else:
+                break
 
-            count += 1
     print(f"Succesfully loaded {count} rollout starting states!")
     if print_average_height:
         average_lowest_free_rows = np.mean([np.mean(d.lowest_free_rows) for d in rollout_population])

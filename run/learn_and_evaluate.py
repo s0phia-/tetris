@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit
 from agents.constant_agent import ConstantAgent
+import time
 
 
 def learn_and_evaluate(env,
@@ -9,7 +10,11 @@ def learn_and_evaluate(env,
                        test_agent,
                        test_points,
                        num_games_per_test,
-                       agent_id=0):
+                       agent_id=0,
+                       verbose=False):
+    time_begin = time.time()
+    int_time = time.time()
+
     num_tests = len(test_points)
     env.reset()
     test_results = np.zeros((num_tests, num_games_per_test))
@@ -31,7 +36,8 @@ def learn_and_evaluate(env,
             agent.learn()
 
         agent.update_steps()
-
+        print(f"time passed for learn {test_index} period: {time.time() - int_time} seconds.")
+        int_time = time.time()
         # TEST
         if num_tests > 0:
             test_agent.policy_weights = agent.copy_current_policy_weights()
@@ -40,6 +46,9 @@ def learn_and_evaluate(env,
                   "Mean: ", np.mean(test_results[test_index, :]),
                   ", Median: ", np.median(test_results[test_index, :]))
         test_index += 1
+        print(f"time passed for test {test_index} period: {time.time() - int_time} seconds.")
+        int_time = time.time()
+    print(f"time passed for entire learn period: {time.time() - time_begin} seconds.")
     return test_results
 
 

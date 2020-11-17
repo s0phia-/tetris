@@ -9,7 +9,8 @@ spec_agent = [
     ('feature_directors', int64[:]),
     ('feature_type', numba.types.string),
     ('num_features', int64),
-    ('feature_directors', float64[:])
+    ('feature_directors', float64[:]),
+    ('direct_features', bool_)
 ]
 
 
@@ -26,12 +27,10 @@ class ConstantAgent:
 
         if np.all(feature_directors == np.ones(8)):
             print("Don't need directing")
-            self.direct_features=False
+            self.direct_features = False
         else:
             print("Feature directors are being used.")
             self.direct_features = True
-        # else:
-        #     self.feature_directors = feature_directors
 
     # def choose_action(self, start_state, start_tetromino):
     #     """
