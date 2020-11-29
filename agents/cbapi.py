@@ -1,6 +1,3 @@
-import numpy as np
-
-
 class Cbapi:
     """
     This should become a general classification-based RL algorithm in the sense of
