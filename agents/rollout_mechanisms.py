@@ -48,7 +48,7 @@ class BatchRollout:
         self.use_cumul_dom = use_cumul_dom
         self.use_filters_during_rollout = use_filters_during_rollout
         if self.use_filters_during_rollout:
-            assert self.use_cumul_dom or self.use_domn and not (self.use_cumul_dom and self.use_dom)
+            assert self.use_cumul_dom or self.use_dom and not (self.use_cumul_dom and self.use_dom)
         # assert not (self.use_cumul_dom_in_rollout and self.use_cumul_dom)
         if self.use_filters_during_rollout or self.use_cumul_dom or self.use_dom:
             self.feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
