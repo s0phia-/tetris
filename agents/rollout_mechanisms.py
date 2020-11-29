@@ -52,9 +52,9 @@ class BatchRollout:
         # assert not (self.use_cumul_dom_in_rollout and self.use_cumul_dom)
         if self.use_filters_during_rollout or self.use_cumul_dom or self.use_dom:
             self.feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
-            warnings.warn(f"The feature directions {self.feature_directors} are used for dominance filtering.")
-        if self.use_filters_during_rollout:
-            warnings.warn(f"Filters are used during the rollout but not to filter the initial choice set A(s).")
+            # warnings.warn(f"The feature directions {self.feature_directors} are used for dominance filtering.")
+        # if self.use_filters_during_rollout:
+        #     warnings.warn(f"Filters are used during the rollout but not to filter the initial choice set A(s).")
 
     def construct_rollout_set(self):
         self.rollout_set = np.random.choice(a=self.rollout_state_population, size=self.rollout_set_size, replace=False if len(self.rollout_state_population) > self.rollout_set_size else True)
