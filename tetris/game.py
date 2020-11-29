@@ -3,21 +3,25 @@ from tetris import state, tetromino  # tetromino_old,
 import numba
 from numba import bool_, int64
 from numba.experimental import jitclass
+import os
+print(f"NUMBA_DISABLE_JIT = {int(os.environ['NUMBA_DISABLE_JIT'])}")
 
-
-specTetris = [
-    ('num_columns', int64),
-    ('num_rows', int64),
-    ('vebose', bool_),
-    ('tetromino_size', int64),
-    ('feature_type', numba.types.string),
-    ('num_features', int64),
-    ('max_cleared_test_lines', int64),
-    ('game_over', bool_),
-    ('current_state', state.State.class_type.instance_type),
-    ('generative_model', tetromino.Tetromino.class_type.instance_type),
-    ('cleared_lines', int64)
-]
+if not int(os.environ['NUMBA_DISABLE_JIT']):
+    specTetris = [
+        ('num_columns', int64),
+        ('num_rows', int64),
+        ('vebose', bool_),
+        ('tetromino_size', int64),
+        ('feature_type', numba.types.string),
+        ('num_features', int64),
+        ('max_cleared_test_lines', int64),
+        ('game_over', bool_),
+        ('current_state', state.State.class_type.instance_type),
+        ('generative_model', tetromino.Tetromino.class_type.instance_type),
+        ('cleared_lines', int64)
+    ]
+else:
+    specTetris = []
 
 
 @jitclass(specTetris)

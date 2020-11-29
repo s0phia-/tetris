@@ -45,10 +45,10 @@ class BatchRollout:
         self.num_value_features = num_value_features
         self.reward_greedy = reward_greedy
         self.use_dom = use_dom
-        if self.use_dom:
-            warnings.warn("Currently only cumulative dominance filters are tested / supported.")
         self.use_cumul_dom = use_cumul_dom
         self.use_filters_during_rollout = use_filters_during_rollout
+        if self.use_filters_during_rollout:
+            assert self.use_cumul_dom or self.use_domn and not (self.use_cumul_dom and self.use_dom)
         # assert not (self.use_cumul_dom_in_rollout and self.use_cumul_dom)
         if self.use_filters_during_rollout or self.use_cumul_dom or self.use_dom:
             self.feature_directors = np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
@@ -68,6 +68,7 @@ class BatchRollout:
         num_available_actions = np.zeros(self.rollout_set_size, dtype=np.int64)
         did_rollout = np.ones(self.rollout_set_size, dtype=bool)
         for ix, rollout_state in enumerate(self.rollout_set):
+            print(f"rollout state = {ix}")
             # Sample tetromino for each rollout state (same for state and state-action rollouts)
             generative_model.next_tetromino()
 
@@ -80,7 +81,7 @@ class BatchRollout:
                                                   self.reward_greedy)
 
             # Rollouts for action-value function estimation
-            if self.use_dom or self.use_cumul_dom and not self.use_filters_during_rollout:
+            if (self.use_dom or self.use_cumul_dom) and not self.use_filters_during_rollout:
                 actions_value_estimates, state_action_features_ix = \
                     action_value_roll_out_with_filters(rollout_state, self.rollout_length, self.rollouts_per_action, self.gamma,
                                                        generative_model.copy_with_same_current_tetromino(),
@@ -156,7 +157,8 @@ def action_value_roll_out_with_filters_during_rollouts(start_state,
                 else:
                     state_tmp = choose_action_in_rollout_with_filters(available_after_states, policy_weights,
                                                                       num_features, reward_greedy,
-                                                                      use_dom, use_cumul_dom)
+                                                                      use_dom, use_cumul_dom,
+                                                                      feature_directors)
                     cumulative_reward += (gamma ** count) * state_tmp.n_cleared_lines
                 count += 1
 
@@ -168,7 +170,8 @@ def action_value_roll_out_with_filters_during_rollouts(start_state,
                 if num_after_states > 0:
                     state_tmp = choose_action_in_rollout_with_filters(available_after_states, policy_weights,
                                                                       num_features, reward_greedy,
-                                                                      use_dom, use_cumul_dom)
+                                                                      use_dom, use_cumul_dom,
+                                                                      feature_directors)
                     final_state_features = state_tmp.get_features_pure(True)
                     cumulative_reward += (gamma ** count) * final_state_features.dot(value_weights)
 
@@ -319,29 +322,24 @@ def action_value_roll_out(start_state,
 @njit(cache=False)
 def choose_action_in_rollout_with_filters(available_after_states, policy_weights,
                                           num_features, reward_greedy,
-                                          rollout_dom_filter, rollout_cumu_dom_filter, feature_directors):
+                                          rollout_dom_filter, rollout_cumu_dom_filter,
+                                          feature_directors):
     num_states = len(available_after_states)
     action_features = np.zeros((num_states, num_features))
     for ix, after_state in enumerate(available_after_states):
         action_features[ix] = after_state.get_features_pure(False)  # , order_by=self.feature_order
-    if rollout_cumu_dom_filter or rollout_dom_filter:
-        not_simply_dominated, not_cumu_dominated = dominance_filter(action_features * feature_directors, len_after_states=num_states)  # domtools.
-        if rollout_cumu_dom_filter:
-            action_features = action_features[not_cumu_dominated]
-            map_back_vector = np.nonzero(not_cumu_dominated)[0]
-        else:
-            action_features = action_features[not_simply_dominated]
-            map_back_vector = np.nonzero(not_simply_dominated)[0]
-        # if rollout_cumu_dom_filter:
-        #     available_after_states = available_after_states[not_simply_dominated]
-        #     action_features = action_features[not_simply_dominated]
-        # elif rollout_dom_filter:
-        #     available_after_states = available_after_states[not_cumu_dominated]
-        #     action_features = action_features[not_cumu_dominated]
+    # if rollout_cumu_dom_filter or rollout_dom_filter:
+    not_simply_dominated, not_cumu_dominated = dominance_filter(action_features * feature_directors, len_after_states=num_states)  # domtools.
+    if rollout_cumu_dom_filter:
+        action_features = action_features[not_cumu_dominated]
+        map_back_vector = np.nonzero(not_cumu_dominated)[0]
+    else:
+        action_features = action_features[not_simply_dominated]
+        map_back_vector = np.nonzero(not_simply_dominated)[0]
 
     utilities = action_features.dot(np.ascontiguousarray(policy_weights))
     move_index = np.argmax(utilities)
-    move = available_after_states[move_index]
+    move = available_after_states[map_back_vector[move_index]]
     return move
 
 

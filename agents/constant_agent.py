@@ -3,6 +3,7 @@ from tetris.state import State, TerminalState
 import numba
 from numba import njit, float64, int64, bool_, int64
 from numba.experimental import jitclass
+from domtools import dom_filter as dominance_filter
 
 spec_agent = [
     ('policy_weights', float64[:]),
@@ -10,8 +11,9 @@ spec_agent = [
     ('feature_type', numba.types.string),
     ('num_features', int64),
     ('feature_directors', float64[:]),
-    ('uses_filters', bool_),
-    ('direct_features', bool_)
+    ('use_filter_in_eval', bool_), # ('direct_features', bool_)
+    ('use_dom_filter', bool_),
+    ('use_cumul_dom_filter', bool_)
 ]
 
 
@@ -20,29 +22,28 @@ class ConstantAgent:
     #  feature_directors=np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
     def __init__(self, policy_weights, feature_type="bcts",
                  feature_directors=np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64),
+                 use_filter_in_eval=False,
                  use_dom_filter=False,
                  use_cumul_dom_filter=False):
         self.policy_weights = policy_weights
         self.feature_type = feature_type
         self.num_features = len(self.policy_weights)
-        self.use_dom_filter = use_dom_filter
-        self.use_cumul_dom_filter = use_cumul_dom_filter
-        if self.use_dom_filter or self.use_cumul_dom_filter:  # or self.use_STEW
-            self.uses_filters = True
-            self.direct_features = True
+        self.use_filter_in_eval = use_filter_in_eval
+        if self.use_filter_in_eval:
+            # Only set use_dom_filter and use_cumul_dom_filter if use_filter_in_eval == True
+            # (use_dom_filter and use_cumul_dom_filter) decide globally "simple vs. cumul" dominance.
+            # _WHERE_ to use filters is decided by `use_filter_in_eval` and `use_filters_during_rollout`
+            assert use_dom_filter or use_cumul_dom_filter and not (use_dom_filter and use_cumul_dom_filter)
+            self.use_dom_filter = use_dom_filter
+            self.use_cumul_dom_filter = use_cumul_dom_filter
+            # self.choose_action_test = self.choose_action_test_with_filters
         else:
-            self.uses_filters = False
-            self.direct_features = False
+            self.use_dom_filter = False
+            self.use_cumul_dom_filter = False
+            # self.choose_action_test = self.choose_action_test_without_filters
 
         assert self.feature_type == "bcts", "Features have to be 'bcts'."
         self.feature_directors = feature_directors
-
-        # if np.all(feature_directors == np.ones(8)):
-        #     print("Don't need directing")
-        #     self.direct_features = False
-        # else:
-        #     print("Feature directors are being used.")
-        #     self.direct_features = True
 
     # def choose_action(self, start_state, start_tetromino):
     #     """
@@ -51,8 +52,8 @@ class ConstantAgent:
     #     return move, move_index
 
     def choose_action(self, start_state, start_tetromino):
-        if self.uses_filters:
-            move = self.choose_action_test(start_state, start_tetromino)
+        if self.use_filter_in_eval:
+            move = self.choose_action_test_without_filters(start_state, start_tetromino)
         else:
             move = self.choose_action_test_with_filters(start_state, start_tetromino)
         return move
@@ -77,22 +78,25 @@ class ConstantAgent:
                          False)  #, move_index
 
         action_features = np.zeros((num_children, self.num_features))
-        if self.direct_features:
-            for ix, after_state in enumerate(children_states):
-                action_features[ix] = after_state.get_features_and_direct(self.feature_directors, False)  # direct_by=self.feature_directors  , order_by=None  , addRBF=False
-        else:
-            for ix, after_state in enumerate(children_states):
-                action_features[ix] = after_state.get_features_pure(False)  # direct_by=self.feature_directors  , order_by=None  , addRBF=False
-        if self.direct_features:
+        for ix, after_state in enumerate(children_states):
+            action_features[ix] = after_state.get_features_pure(False)
 
+        not_simply_dominated, not_cumu_dominated = dominance_filter(action_features * self.feature_directors,
+                                                                    len_after_states=num_children)  # domtools.
+        if self.use_cumul_dom_filter:
+            action_features = action_features[not_cumu_dominated]
+            map_back_vector = np.nonzero(not_cumu_dominated)[0]
+        else:
+            action_features = action_features[not_simply_dominated]
+            map_back_vector = np.nonzero(not_simply_dominated)[0]
 
         utilities = action_features.dot(np.ascontiguousarray(self.policy_weights))
         max_indices = np.where(utilities == np.max(utilities))[0]
         move_index = np.random.choice(max_indices)
-        move = children_states[move_index]
+        move = children_states[map_back_vector[move_index]]
         return move  #, move_index
 
-    def choose_action_test(self, start_state, start_tetromino):
+    def choose_action_test_without_filters(self, start_state, start_tetromino):
         # """
         # Chooses the utility-maximising action.
         # """
@@ -112,12 +116,12 @@ class ConstantAgent:
                          False)  #, move_index
 
         action_features = np.zeros((num_children, self.num_features))
-        if self.direct_features:
-            for ix, after_state in enumerate(children_states):
-                action_features[ix] = after_state.get_features_and_direct(self.feature_directors, False)  # direct_by=self.feature_directors  , order_by=None  , addRBF=False
-        else:
-            for ix, after_state in enumerate(children_states):
-                action_features[ix] = after_state.get_features_pure(False)  # direct_by=self.feature_directors  , order_by=None  , addRBF=False
+        # if self.direct_features:
+        #     for ix, after_state in enumerate(children_states):
+        #         action_features[ix] = after_state.get_features_and_direct(self.feature_directors, False)  # direct_by=self.feature_directors  , order_by=None  , addRBF=False
+        # else:
+        for ix, after_state in enumerate(children_states):
+            action_features[ix] = after_state.get_features_pure(False)  # direct_by=self.feature_directors  , order_by=None  , addRBF=False
         utilities = action_features.dot(np.ascontiguousarray(self.policy_weights))
         max_indices = np.where(utilities == np.max(utilities))[0]
         move_index = np.random.choice(max_indices)

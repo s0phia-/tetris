@@ -132,7 +132,7 @@ def evaluate(env, agent, num_runs):
     for i in range(num_runs):
         env.reset()
         while not env.game_over and env.cleared_lines <= env.max_cleared_test_lines:
-            after_state = agent.choose_action_test(start_state=env.current_state, start_tetromino=env.generative_model)
+            after_state = agent.choose_action(start_state=env.current_state, start_tetromino=env.generative_model)
             env.make_step(after_state)
         rewards[i] = env.cleared_lines
     return rewards
