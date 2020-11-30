@@ -68,7 +68,7 @@ class BatchRollout:
         num_available_actions = np.zeros(self.rollout_set_size, dtype=np.int64)
         did_rollout = np.ones(self.rollout_set_size, dtype=bool)
         for ix, rollout_state in enumerate(self.rollout_set):
-            print(f"rollout state = {ix}")
+            # print(f"rollout state = {ix}")
             # Sample tetromino for each rollout state (same for state and state-action rollouts)
             generative_model.next_tetromino()
 

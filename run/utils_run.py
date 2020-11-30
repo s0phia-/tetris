@@ -67,7 +67,7 @@ def load_rollout_state_population(p, max_samples, print_average_height=False):
             else:
                 break
 
-    print(f"Succesfully loaded {count} rollout starting states!")
+    # print(f"Succesfully loaded {count} rollout starting states!")
     if print_average_height:
         average_lowest_free_rows = np.mean([np.mean(d.lowest_free_rows) for d in rollout_population])
         print("average height in rollout state population", average_lowest_free_rows)
