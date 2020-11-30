@@ -54,9 +54,9 @@ class ConstantAgent:
 
     def choose_action(self, start_state, start_tetromino):
         if self.use_filter_in_eval:
-            move = self.choose_action_test_without_filters(start_state, start_tetromino)
-        else:
             move = self.choose_action_test_with_filters(start_state, start_tetromino)
+        else:
+            move = self.choose_action_test_without_filters(start_state, start_tetromino)
         return move
 
     def choose_action_test_with_filters(self, start_state, start_tetromino):
