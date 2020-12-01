@@ -41,25 +41,25 @@ class BatchRollout:
         self.rollout_length = rollout_length
         self.rollouts_per_action = rollouts_per_action
         self.rollout_set_size = rollout_set_size
-        # print("The budget is: ", self.rollout_set_size * self.rollouts_per_action * (self.rollout_length+1) * 32)
         self.gamma = gamma
         self.num_features = num_features
         self.num_value_features = num_value_features
         self.reward_greedy = reward_greedy
         assert not self.reward_greedy, "Reward_greedy currently not supported (see rollout functions)."
+
+        """
+        About dominance filtering: it is currently possible to filter before rollouts are started, during
+        rollouts, or both. In any case all filters are either "simple dominance" filters or "cumulative
+        dominance" filters. They cannot be mixed (e.g., simple for before and cumulative during rollouts).  
+        """
         self.use_dom = use_dom
         self.use_cumul_dom = use_cumul_dom
+        assert not (self.use_dom and self.use_cumul_dom)
         self.use_filters_during_rollout = use_filters_during_rollout
         self.use_filters_before_rollout = use_filters_before_rollout
-        assert not (self.use_dom and self.use_cumul_dom)
-        # if self.use_filters_during_rollout or self.use_filters_before_rollout:
-        #     assert self.use_cumul_dom or self.use_dom and not (self.use_cumul_dom and self.use_dom)
-        # assert not (self.use_cumul_dom_in_rollout and self.use_cumul_dom)
+
+        # Feature directors are only used for filtering.
         self.feature_directors = feature_directors
-        # if self.use_filters_during_rollout or self.use_filters_before_rollout or self.use_cumul_dom or self.use_dom:
-            # warnings.warn(f"The feature directions {self.feature_directors} are used for dominance filtering.")
-        # if self.use_filters_during_rollout:
-        #     warnings.warn(f"Filters are used during the rollout but not to filter the initial choice set A(s).")
 
     def construct_rollout_set(self):
         self.rollout_set = np.random.choice(a=self.rollout_state_population, size=self.rollout_set_size,
