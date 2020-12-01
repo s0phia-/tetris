@@ -17,7 +17,6 @@ spec_agent = [
 ]
 
 
-
 @jitclass(spec_agent)
 class ConstantAgent:
     #  feature_directors=np.array([-1, -1, -1, -1, -1, -1, 1, -1], dtype=np.float64)
