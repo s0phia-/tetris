@@ -205,7 +205,7 @@ def general_action_value_rollout(use_filters_during_rollout,
                         # Terminal state
                         game_ended = True
                     else:
-                        state_tmp = select_action_in_rollout(available_after_states, policy_weights, num_after_states,
+                        state_tmp = select_action_in_rollout(available_after_states, policy_weights,
                                                              num_features, use_filters_during_rollout, feature_directors,
                                                              use_dom, use_cumul_dom)
                         cumulative_reward += (gamma ** count) * state_tmp.n_cleared_lines
@@ -217,7 +217,7 @@ def general_action_value_rollout(use_filters_during_rollout,
                     available_after_states = generative_model.get_after_states(state_tmp)
                     num_after_states = len(available_after_states)
                     if num_after_states > 0:
-                        state_tmp = select_action_in_rollout(available_after_states, policy_weights, num_after_states,
+                        state_tmp = select_action_in_rollout(available_after_states, policy_weights,
                                                              num_features, use_filters_during_rollout, feature_directors,
                                                              use_dom, use_cumul_dom)
 
@@ -237,8 +237,9 @@ def general_action_value_rollout(use_filters_during_rollout,
 
 
 @njit
-def select_action_in_rollout(available_after_states, policy_weights, num_after_states, num_features,
+def select_action_in_rollout(available_after_states, policy_weights, num_features,
                              use_filters_during_rollout, feature_directors, use_dom, use_cumul_dom):
+    num_after_states = len(available_after_states)
     action_features = np.zeros((num_after_states, num_features))
     for ix, after_state in enumerate(available_after_states):
         action_features[ix] = after_state.get_features_pure(False)  # , order_by=self.feature_order
@@ -285,7 +286,7 @@ def value_roll_out(start_state,
         num_after_states = len(available_after_states)
         if num_after_states == 0:
             return value_estimate
-        state_tmp = select_action_in_rollout(available_after_states, policy_weights, num_after_states, num_features,
+        state_tmp = select_action_in_rollout(available_after_states, policy_weights, num_features,
                                              use_filters_during_rollout, feature_directors, use_dom, use_cumul_dom)
         value_estimate += (gamma ** count) * state_tmp.n_cleared_lines
         count += 1
@@ -295,9 +296,10 @@ def value_roll_out(start_state,
     if not state_tmp.terminal_state:
         # generative_model.next_tetromino()
         available_after_states = generative_model.get_after_states(state_tmp)
-        if len(available_after_states) == 0:
+        num_after_states = len(available_after_states)
+        if num_after_states == 0:
             return value_estimate
-        state_tmp = select_action_in_rollout(available_after_states, policy_weights, num_after_states, num_features,
+        state_tmp = select_action_in_rollout(available_after_states, policy_weights, num_features,
                                              use_filters_during_rollout, feature_directors, use_dom, use_cumul_dom)
         final_state_features = state_tmp.get_features_pure(True)  # order_by=None, standardize_by=None,
         value_estimate += (gamma ** count) * final_state_features.dot(value_weights)
