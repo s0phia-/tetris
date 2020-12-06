@@ -98,3 +98,28 @@ def calc_lowest_free_rows(rep):
     return lowest_free_rows
 
 
+def kill_files(folder):
+    for the_file in os.listdir(folder):
+        file_path = os.path.join(folder, the_file)
+        try:
+            print(f"Trying to kill {file_path} (for numba).")
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            print("failed on filepath: %s" % file_path)
+
+
+def kill_numba_cache():
+    root_folder = os.path.realpath(__file__ + "/../../")
+    print(f"ROOT FOLDER: {root_folder}")
+
+    for root, dirnames, filenames in os.walk(root_folder):
+        for dirname in dirnames:
+            if dirname == "__pycache__":
+                try:
+                    # print(f"Found __pycache__ to kill (for numba).")
+                    kill_files(root + "/" + dirname)
+                except Exception as e:
+                    print("failed on %s", root)
+
+

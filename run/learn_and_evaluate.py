@@ -42,13 +42,13 @@ def learn_and_evaluate(env,
         if num_tests > 0:
             test_agent.policy_weights = agent.copy_current_policy_weights()
             test_results[test_index, :] = evaluate(test_env, test_agent, num_games_per_test)
-            print("Agent", agent_id, "was testing: ", test_index + 1, " out of ", num_tests, " tests. \n",
-                  "Mean: ", np.mean(test_results[test_index, :]),
-                  ", Median: ", np.median(test_results[test_index, :]))
+            # print("Agent", agent_id, "was testing: ", test_index + 1, " out of ", num_tests, " tests. \n",
+            #       "Mean: ", np.mean(test_results[test_index, :]),
+            #       ", Median: ", np.median(test_results[test_index, :]))
         test_index += 1
         # print(f"time passed for test {test_index} period: {time.time() - int_time} seconds.")
         int_time = time.time()
-    print(f"time passed for entire learn period: {time.time() - time_begin} seconds.")
+    # print(f"time passed for entire learn period: {time.time() - time_begin} seconds.")
     return test_results
 
 
