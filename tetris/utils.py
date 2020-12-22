@@ -105,7 +105,7 @@ def softmax(U):
     return ps
 
 
-def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_axis):
+def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_axis, title=""):
     # Plot and save learning curves.
     fig1, ax1 = plt.subplots()
     for test_results_ix in range(len(compare_results)):
@@ -115,10 +115,10 @@ def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_ax
         ax1.plot(x_axis, mean_array, label=compare_ids[test_results_ix])
         ax1.fill_between(x_axis, mean_array - serr_array, mean_array + serr_array, alpha=0.2)
 
-    plt.title('Mean performance')
+    plt.title(f'Mean performance{title}')
     plt.xlabel('Iteration')
     plt.ylabel('Mean score')
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.show()
     fig1.savefig(os.path.join(plots_path, "mean_performance"))
     plt.close()
@@ -129,10 +129,10 @@ def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_ax
         mean_array = np.median(test_results, axis=(0, 2))
         ax1.plot(x_axis, mean_array, label=compare_ids[test_results_ix])
 
-    plt.title('Median performance')
+    plt.title(f'Median performance{title}')
     plt.xlabel('Iteration')
     plt.ylabel('Median score')
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.show()
     fig1.savefig(os.path.join(plots_path, "median_performance"))
     plt.close()
@@ -143,10 +143,10 @@ def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_ax
         mean_array = np.max(test_results, axis=(0, 2))
         ax1.plot(x_axis, mean_array, label=compare_ids[test_results_ix])
 
-    plt.title('Max performance')
+    plt.title(f'Max performance{title}')
     plt.xlabel('Iteration')
     plt.ylabel('Max score')
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.show()
     fig1.savefig(os.path.join(plots_path, "max_performance"))
     plt.close()
