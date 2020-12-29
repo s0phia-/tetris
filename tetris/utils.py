@@ -120,7 +120,7 @@ def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_ax
     plt.ylabel('Mean score')
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.show()
-    fig1.savefig(os.path.join(plots_path, "mean_performance"))
+    fig1.savefig(os.path.join(plots_path, "mean_performance"), bbox_inches='tight')
     plt.close()
 
     fig1, ax1 = plt.subplots()
@@ -134,7 +134,7 @@ def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_ax
     plt.ylabel('Median score')
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.show()
-    fig1.savefig(os.path.join(plots_path, "median_performance"))
+    fig1.savefig(os.path.join(plots_path, "median_performance"), bbox_inches='tight')
     plt.close()
 
     fig1, ax1 = plt.subplots()
@@ -148,7 +148,7 @@ def plot_multiple_learning_curves(plots_path, compare_results, compare_ids, x_ax
     plt.ylabel('Max score')
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.show()
-    fig1.savefig(os.path.join(plots_path, "max_performance"))
+    fig1.savefig(os.path.join(plots_path, "max_performance"), bbox_inches='tight')
     plt.close()
 
 
