@@ -1,95 +1,90 @@
 import numpy as np
-from tetris import state, tetromino  # tetromino_old,
-import numba
-from numba import bool_, int64
-from numba.experimental import jitclass
-import os
-print(f"NUMBA_DISABLE_JIT = {int(os.environ['NUMBA_DISABLE_JIT'])}")
-
-if not int(os.environ['NUMBA_DISABLE_JIT']):
-    specTetris = [
-        ('num_columns', int64),
-        ('num_rows', int64),
-        ('vebose', bool_),
-        ('tetromino_size', int64),
-        ('feature_type', numba.types.string),
-        ('num_features', int64),
-        ('max_cleared_test_lines', int64),
-        ('game_over', bool_),
-        ('current_state', state.State.class_type.instance_type),
-        ('generative_model', tetromino.Tetromino.class_type.instance_type),
-        ('cleared_lines', int64)
-    ]
-else:
-    specTetris = []
+from maltetetris import state, tetromino
+import collections
+import time
+from maltetetris.utils import print_board_to_string
 
 
-@jitclass(specTetris)
+
 class Tetris:
-    """
-    Tetris for reinforcement learning applications.
-
-    Tailored to use with a set of hand-crafted features such as "BCTS" (Thiery & Scherrer 2009)
-
-    The BCTS feature names (and order) are
-    ['rows_with_holes', 'column_transitions', 'holes', 'landing_height',
-    'cumulative_wells', 'row_transitions', 'eroded', 'hole_depth']
-
-    """
-    def __init__(self,
-                 num_columns,
-                 num_rows,
-                 max_cleared_test_lines=10e9,
-                 tetromino_size=4,
-                 feature_type="bcts",
-                 num_features=8
-                 ):
-        """
-        :param num_columns: 
-        :param num_rows:
-        :param tetromino_size:
-        :param max_cleared_test_lines:
-        """
+    def __init__(self, num_columns, num_rows, verbose=False,
+                 plot_intermediate_results=False, feature_type='bcts', num_features=8,
+                 tetromino_size=4, target_update=1, max_cleared_test_lines=np.inf):
+        self.afterstates = None
         self.num_columns = num_columns
         self.num_rows = num_rows
         self.tetromino_size = tetromino_size
+        # self.player = player
+        self.verbose = verbose
+        self.target_update = target_update
         self.num_features = num_features
         self.feature_type = feature_type
-        self.max_cleared_test_lines = max_cleared_test_lines
+        self.n_fields = self.num_columns * self.num_rows
         self.game_over = False
-        self.current_state = state.State(np.zeros((self.num_rows, self.num_columns), dtype=np.bool_),  # representation=
-                                         np.zeros(self.num_columns, dtype=np.int64),  # lowest_free_rows=
-                                         np.array([0], dtype=np.int64),  # changed_lines=
-                                         np.array([0], dtype=np.int64),  # pieces_per_changed_row=
-                                         0.0,  # landing_height_bonus=
-                                         self.num_features,  # num_features=
-                                         "bcts",  # feature_type=
-                                         False,  # terminal_state=
-                                         False  # has_overlapping_fields=
-                                         )
-        self.generative_model = tetromino.Tetromino(self.feature_type, self.num_features, self.num_columns)
+        self.current_state = state.State(
+            representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int_),
+            lowest_free_rows=np.zeros(self.num_columns, dtype=np.int_), num_features=num_features,
+            feature_type=feature_type)
+        self.tetrominos = [tetromino.Straight(feature_type, num_features, self.num_columns),
+                           tetromino.RCorner(feature_type, num_features, self.num_columns),
+                           tetromino.LCorner(feature_type, num_features, self.num_columns),
+                           tetromino.Square(feature_type, num_features, self.num_columns),
+                           tetromino.SnakeR(feature_type, num_features, self.num_columns),
+                           tetromino.SnakeL(feature_type, num_features, self.num_columns),
+                           tetromino.T(feature_type, num_features, self.num_columns)]
+        self.tetromino_sampler = tetromino.TetrominoSamplerRandom(self.tetrominos)
         self.cleared_lines = 0
+        self.state_samples = []
+        self.cumulative_steps = 0
+        self.max_cleared_test_lines = max_cleared_test_lines
+        self.plot_intermediate_results = plot_intermediate_results
+        self.current_tetromino = None
 
     def reset(self):
         self.game_over = False
-        self.current_state = state.State(np.zeros((self.num_rows, self.num_columns), dtype=np.bool_),  # representation=
-                                         np.zeros(self.num_columns, dtype=np.int64),  # lowest_free_rows=
-                                         np.array([0], dtype=np.int64),  # changed_lines=
-                                         np.array([0], dtype=np.int64),  # pieces_per_changed_row=
-                                         0.0,  # landing_height_bonus=
-                                         self.num_features,  # num_features=
-                                         "bcts",  # feature_type=
-                                         False,  # terminal_state=
-                                         False  # has_overlapping_fields=
-                                         )
-        self.current_state.calc_bcts_features()
+        self.current_state = state.State(
+            representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int_),
+            lowest_free_rows=np.zeros(self.num_columns, dtype=np.int_), num_features=self.num_features,
+            feature_type=self.feature_type)
+        self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
         self.cleared_lines = 0
-        self.generative_model.next_tetromino()
+        self.state_samples = []
+        self.current_tetromino = self.tetromino_sampler.next_tetromino()
+        self.afterstates = None
 
-    def make_step(self, after_state):
-        self.game_over = after_state.terminal_state
-        if not self.game_over:
-            self.cleared_lines += after_state.n_cleared_lines
-            self.current_state = after_state
-            self.generative_model.next_tetromino()
+    def get_after_states(self):
+        afterstates = self.current_tetromino.get_after_states(self.current_state)  # the actions are afterstates
+        available_after_states = np.array([child for child in afterstates if not child.terminal_state])
+        if len(available_after_states) == 0:
+            self.game_over = True
+        num_states = len(available_after_states)
+        action_features = np.zeros((num_states, self.num_features))
+        for ix, after_state in enumerate(available_after_states):
+            action_features[ix] = after_state.get_features()  # can use directions here
+        self.afterstates = available_after_states
+        return action_features
 
+    def step(self, action_ix):
+        self.get_after_states()
+        observation = self.afterstates[action_ix]
+        self.cleared_lines += observation.n_cleared_lines
+        reward = observation.n_cleared_lines  # Malte used self.cleared_lines for this
+        self.current_state = observation
+        self.is_game_over()
+        done = self.game_over
+        info = None
+        self.current_tetromino = self.tetromino_sampler.next_tetromino()
+        return observation, reward, done, info
+
+    def is_game_over(self):
+        afterstates = self.current_tetromino.get_after_states(self.current_state)  # the actions are afterstates
+        available_after_states = np.array([child for child in afterstates if not child.terminal_state])
+        if len(available_after_states) == 0:
+            self.game_over = True
+            return True
+
+    def print_current_board(self):
+        print(print_board_to_string(self.current_state))
+
+    def print_current_tetromino(self):
+        print(self.current_tetromino.__repr__())
