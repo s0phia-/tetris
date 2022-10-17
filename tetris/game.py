@@ -1,8 +1,8 @@
 import numpy as np
-from maltetetris import state, tetromino
+from tetris import state, tetromino
 import collections
 import time
-from maltetetris.utils import print_board_to_string
+from tetris.utils import print_board_to_string
 
 
 

@@ -1,4 +1,4 @@
-from maltetetris.game import Tetris
+from tetris.game import Tetris
 import numpy as np
 
 env = Tetris(10, 10, False)
