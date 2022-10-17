@@ -1,10 +1,7 @@
 import numpy as np
 import state
 import tetromino
-import collections
-import time
 from tetris.utils import print_board_to_string
-
 
 
 class Tetris:
