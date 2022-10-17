@@ -386,6 +386,3 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
     # else:  # ordered by standardized bcts-weights ['eroded', 'rows_with_holes', 'landing_height', 'column_transitions', 'holes', 'cumulative_wells', 'row_transitions', 'hole_depth']
     #     out = [rows_with_holes, column_transitions, holes, cumulative_wells, row_transitions, hole_depth]
     return out
-
-
-
