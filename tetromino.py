@@ -1,5 +1,5 @@
 import numpy as np
-import state
+from tetris import state
 
 
 class Tetromino:
