@@ -1,16 +1,14 @@
 import numpy as np
-import state
-import tetromino
-import collections
-import time
+from tetris import state
+from tetris import tetromino
 from tetris.utils import print_board_to_string
 
 
-
 class Tetris:
-    def __init__(self, num_columns, num_rows, verbose=False,
+    def __init__(self, num_columns, num_rows, verbose=False, feature_directions=None,
                  plot_intermediate_results=False, feature_type='bcts', num_features=8,
                  tetromino_size=4, target_update=1, max_cleared_test_lines=np.inf):
+        self.feature_directions = feature_directions
         self.afterstates = None
         self.num_columns = num_columns
         self.num_rows = num_rows
@@ -61,31 +59,35 @@ class Tetris:
         num_states = len(available_after_states)
         action_features = np.zeros((num_states, self.num_features))
         for ix, after_state in enumerate(available_after_states):
-            action_features[ix] = after_state.get_features()  # can use directions here
+            action_features[ix] = after_state.get_features(direct_by=self.feature_directions)  # can use directions here
         self.afterstates = available_after_states
         return action_features
 
     def step(self, action_ix):
-        self.get_after_states()
+        observation_features = self.get_after_states()[action_ix]
         observation = self.afterstates[action_ix]
         self.cleared_lines += observation.n_cleared_lines
         reward = observation.n_cleared_lines  # Malte used self.cleared_lines for this
         self.current_state = observation
-        self.is_game_over()
-        done = self.game_over
-        info = None
         self.current_tetromino = self.tetromino_sampler.next_tetromino()
-        return observation, reward, done, info
+        done = self.is_game_over(observation)
+        info = None
+        return observation_features, reward, done, info
 
-    def is_game_over(self):
-        afterstates = self.current_tetromino.get_after_states(self.current_state)  # the actions are afterstates
+    def is_game_over(self, state):
+        afterstates = self.current_tetromino.get_after_states(state)  # the actions are afterstates
         available_after_states = np.array([child for child in afterstates if not child.terminal_state])
         if len(available_after_states) == 0:
             self.game_over = True
             return True
+        else:
+            return False
 
     def print_current_board(self):
         print(print_board_to_string(self.current_state))
 
     def print_current_tetromino(self):
         print(self.current_tetromino.__repr__())
+
+    def get_current_state_features(self):
+        return self.current_state.get_features(direct_by=self.feature_directions)
