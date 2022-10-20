@@ -12,10 +12,11 @@ for x in range(100):
     env.print_current_tetromino()  ##
     after_state_features = env.get_after_states()
     i = np.argmax([np.sum(y) for y in after_state_features])  # equal weights, directed
+    print(after_state_features[i])
     observation, reward, done, _ = env.step(i)
     env.print_current_board()  ##
     cleared_lines += reward
-    print(cleared_lines)  ##
+    # print(cleared_lines)  ##
     if done:
         env.reset()
         # cleared_lines = 0
