@@ -185,7 +185,7 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                 cell_below = 1
 
                 # Needed for hole_depth
-                number_of_full_cells_above = np.sum(col)
+                number_of_full_cells_above = np.sum(col) # TODO this is wrong
 
                 # There is at least one column_transition from the highest full cell to "the top".
                 column_transitions += 1
@@ -194,7 +194,8 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                         # Holes
                         holes += 1
                         rows_with_holes_set.add(row_ix)
-                        hole_depth += number_of_full_cells_above
+                        if col[row_ix + 1] == 1:
+                            hole_depth += number_of_full_cells_above
 
                         # Column transitions
                         if cell_below:
@@ -253,7 +254,8 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                         # Holes
                         holes += 1
                         rows_with_holes_set.add(row_ix)
-                        hole_depth += number_of_full_cells_above
+                        if col[row_ix + 1] == 1:
+                            hole_depth += number_of_full_cells_above
 
                         # Column transitions
                         if cell_below:
@@ -318,7 +320,8 @@ def get_feature_values_jitted(lowest_free_rows, representation, num_rows, num_co
                         # Holes
                         holes += 1
                         rows_with_holes_set.add(row_ix)
-                        hole_depth += number_of_full_cells_above
+                        if col[row_ix+1] == 1:
+                            hole_depth += number_of_full_cells_above
 
                         # Column transitions
                         if cell_below:
