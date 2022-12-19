@@ -73,20 +73,14 @@ class Tetris:
             return False
 
     def get_best_policy(self):
-
         after_states = self.current_tetromino.get_after_states(self.current_state)
-
         after_state_fitness = np.array(list(map(self.fitness, after_states)))
-
         best_policy = (after_state_fitness == after_state_fitness.max()).astype(float)
         best_policy /= best_policy.sum()
-
         return best_policy
 
     def fitness(self, state):
-
         state_features = state.get_features()
-
         fitness_value = state_features[0] * -24.04 + \
                         state_features[1] * -19.77 + \
                         state_features[2] * -13.08 + \
@@ -99,9 +93,31 @@ class Tetris:
         return fitness_value
 
     def render(self):
-
         print(print_board_to_string(self.current_state))
         print(self.current_tetromino)
 
     def get_current_state_features(self):
         return self.current_state.get_features(direct_by=self.feature_directions)
+
+    def single_rollout(self, action, length=5):
+        reset_state = self.current_state
+        reset_tetrimino = self.current_tetromino
+        self.step(action)
+        rollout_return = 0
+        for _ in range(length-1):
+            action = np.random.choice(self.get_after_states()[0])
+            _, reward, done, _ = self.step(action)
+            rollout_return += reward
+            if done:
+                rollout_return = -1
+                break
+        self.current_state = reset_state
+        self.current_tetromino = reset_tetrimino
+        return rollout_return
+
+    def perform_rollouts(self, actions, length=5):
+        rollout_returns = {}
+        for action in actions:
+            action_rollout_return = self.single_rollout(action, length)
+            rollout_returns[action] = action_rollout_return
+        return rollout_returns
