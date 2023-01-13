@@ -1,10 +1,23 @@
 import numpy as np
+import random
 from tetris import state
 from tetris import tetromino
 from tetris.utils import print_board_to_string
 
 
 class Tetris:
+    """
+    Features:
+    0: rows_with_holes
+    1: column_transitions
+    2: holes
+    3: landing height
+    4: cumulative_wells
+    5: row_transitions
+    6: eroded pieces
+    7: hole_depth
+    [3, 2, 6, 1, 5, 4, 7, 0]
+    """
     def __init__(self, num_columns, num_rows, feature_directions=None,
                  feature_type='bcts', num_features=8,
                  tetromino_size=4):
@@ -54,10 +67,10 @@ class Tetris:
                 all_afterstates[ix] = after_state.get_features(direct_by=self.feature_directions)  # can use directions here
             return action_features, all_afterstates
         else:
-            return action_features
+            return action_features, None
 
     def step(self, action):
-        observation_features = self.get_after_states()[action]
+        observation_features = self.get_after_states()[0][int(action)]
         self.current_state = self.afterstates[action]
         reward = self.current_state.n_cleared_lines  # Malte used self.cleared_lines for this
         self.current_tetromino = self.tetromino_sampler.next_tetromino()
@@ -102,10 +115,16 @@ class Tetris:
     def single_rollout(self, action, length=5):
         reset_state = self.current_state
         reset_tetrimino = self.current_tetromino
-        self.step(action)
+        if self.is_game_over(reset_state):
+            return -1
+        _, _, done, _ = self.step(action)
+        if done:
+            self.current_state = reset_state
+            self.current_tetromino = reset_tetrimino
+            return -1
         rollout_return = 0
         for _ in range(length-1):
-            action = np.random.choice(self.get_after_states()[0])
+            action = random.randrange(len(self.get_after_states()[0]))
             _, reward, done, _ = self.step(action)
             rollout_return += reward
             if done:
@@ -115,9 +134,13 @@ class Tetris:
         self.current_tetromino = reset_tetrimino
         return rollout_return
 
-    def perform_rollouts(self, actions, length=5):
-        rollout_returns = {}
-        for action in actions:
-            action_rollout_return = self.single_rollout(action, length)
-            rollout_returns[action] = action_rollout_return
-        return rollout_returns
+    def perform_rollouts(self, actions, length=5, n=5):
+        rollout_actions = []
+        rollout_returns = []
+        for action in range(len(actions)):
+            action_all_returns = []
+            for i in range(n):  # do n rollouts,
+                action_all_returns.append(self.single_rollout(action, length))
+            rollout_actions.append(actions[action])
+            rollout_returns.append(np.mean(action_all_returns))  # save the mean of the rollout returns
+        return rollout_actions, rollout_returns
