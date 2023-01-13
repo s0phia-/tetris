@@ -46,8 +46,8 @@ class State:
         features = self.features
         # if order_by is not None:
         #     features = features[order_by]
-        # if direct_by is not None:
-        #     features = features * direct_by
+        if direct_by is not None:
+            features = features * direct_by
         # if standardize_by is not None:
         #     features = features / standardize_by
         # if addRBF:
