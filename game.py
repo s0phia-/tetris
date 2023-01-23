@@ -112,7 +112,7 @@ class Tetris:
     def get_current_state_features(self):
         return self.current_state.get_features(direct_by=self.feature_directions)
 
-    def single_rollout(self, action, length=5):
+    def single_rollout(self, action, policy_function, length):
         reset_state = self.current_state
         reset_tetrimino = self.current_tetromino
         if self.is_game_over(reset_state):
@@ -124,7 +124,7 @@ class Tetris:
             return -1
         rollout_return = 0
         for _ in range(length-1):
-            action = random.randrange(len(self.get_after_states()[0]))
+            action = policy_function(self.get_after_states(include_terminal=True)[0])  # random.randrange(len(self.get_after_states()[0]))
             _, reward, done, _ = self.step(action)
             rollout_return += reward
             if done:
@@ -134,13 +134,13 @@ class Tetris:
         self.current_tetromino = reset_tetrimino
         return rollout_return
 
-    def perform_rollouts(self, actions, length=5, n=5):
+    def perform_rollouts(self, actions, policy_function, length=5, n=5):
         rollout_actions = []
         rollout_returns = []
         for action in range(len(actions)):
             action_all_returns = []
             for i in range(n):  # do n rollouts,
-                action_all_returns.append(self.single_rollout(action, length))
+                action_all_returns.append(self.single_rollout(action, policy_function, length))
             rollout_actions.append(actions[action])
             rollout_returns.append(np.mean(action_all_returns))  # save the mean of the rollout returns
         return rollout_actions, rollout_returns
