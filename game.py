@@ -31,13 +31,16 @@ class Tetris:
         self.tetromino_size = tetromino_size
 
         # The tetronimoes
-        self.tetrominos = [tetromino.Straight(feature_type, num_features, self.num_columns),
-                           tetromino.RCorner(feature_type, num_features, self.num_columns),
-                           tetromino.LCorner(feature_type, num_features, self.num_columns),
-                           tetromino.Square(feature_type, num_features, self.num_columns),
-                           tetromino.SnakeR(feature_type, num_features, self.num_columns),
-                           tetromino.SnakeL(feature_type, num_features, self.num_columns),
-                           tetromino.T(feature_type, num_features, self.num_columns)]
+        self.tetrominos = [tetromino.ThreeL(feature_type, num_features, self.num_columns),
+                           tetromino.ThreeLine(feature_type, num_features, self.num_columns)]
+
+            #               [tetromino.Straight(feature_type, num_features, self.num_columns),
+            #                tetromino.RCorner(feature_type, num_features, self.num_columns),
+            #                tetromino.LCorner(feature_type, num_features, self.num_columns),
+            #                tetromino.Square(feature_type, num_features, self.num_columns),
+            #                tetromino.SnakeR(feature_type, num_features, self.num_columns),
+            #                tetromino.SnakeL(feature_type, num_features, self.num_columns),
+            #                tetromino.T(feature_type, num_features, self.num_columns)]
 
         # game setup
         self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)

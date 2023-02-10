@@ -154,6 +154,132 @@ class SnakeR(Tetromino):
         return after_states
 
 
+class ThreeLine(Tetromino):
+    def __init__(self, feature_type, num_features, num_columns):
+        Tetromino.__init__(self, feature_type, num_features, num_columns)
+
+    def __repr(self):
+        return '''██ ██ ██'''
+
+    def get_after_states(self, current_state):
+        after_states = []
+        # Vertical placements
+        for col_ix, free_pos in enumerate(current_state.lowest_free_rows):
+            anchor_row = free_pos
+            new_representation = current_state.representation.copy()
+            new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
+            new_lowest_free_rows = current_state.lowest_free_rows.copy()
+            new_lowest_free_rows[col_ix] += 3
+            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                    anchor_col=col_ix,
+                                    changed_lines=np.arange(anchor_row, anchor_row + 3),
+                                    pieces_per_changed_row=np.array([1, 1, 1]),
+                                    landing_height_bonus=1, num_features=self.num_features,
+                                    feature_type=self.feature_type)
+
+            after_states.append(new_state)
+
+        # Horizontal placements
+        max_col_index = self.num_columns - 2
+        for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+            anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 3)])
+            new_representation = current_state.representation.copy()
+            new_representation[anchor_row, col_ix:(col_ix + 3)] = 1
+            new_lowest_free_rows = current_state.lowest_free_rows.copy()
+            new_lowest_free_rows[col_ix:(col_ix + 3)] = anchor_row + 1
+            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                    anchor_col=col_ix,
+                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                    pieces_per_changed_row=np.array([3]),
+                                    landing_height_bonus=0, num_features=self.num_features,
+                                    feature_type=self.feature_type)
+
+            after_states.append(new_state)
+        return after_states
+
+
+class ThreeL(Tetromino):
+    def __init__(self, feature_type, num_features, num_columns):
+        Tetromino.__init__(self, feature_type, num_features, num_columns)
+
+    def __repr__(self):
+        return ''' ██ ██ 
+                   ██'''
+
+    def get_after_states(self, current_state):
+        after_states = []
+        # Horizontal placements
+        max_col_index = self.num_columns - 1
+        for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+            # Bottom-right corner
+            anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
+            new_representation = current_state.representation.copy()
+            new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
+            new_representation[anchor_row + 1, col_ix + 1] = 1
+            new_lowest_free_rows = current_state.lowest_free_rows.copy()
+            new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1  # todo: understand this! Should it be +2 or +1
+            new_lowest_free_rows[col_ix + 1] = anchor_row + 2
+            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                    anchor_col=col_ix,
+                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                    pieces_per_changed_row=np.array([2]),
+                                    landing_height_bonus=0.5, num_features=self.num_features,
+                                    feature_type=self.feature_type)
+            after_states.append(new_state)
+
+            # Top-left corner
+            # anchor row is lowest row the tetrimino lands on
+            anchor_row = np.maximum(current_state.lowest_free_rows[col_ix],
+                                    np.max(current_state.lowest_free_rows[col_ix + 1]) - 1)
+            new_representation = current_state.representation.copy()
+            new_representation[anchor_row + 1, col_ix:(col_ix + 2)] = 1
+            new_representation[anchor_row, col_ix] = 1
+            new_lowest_free_rows = current_state.lowest_free_rows.copy()
+            new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 2
+            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                    anchor_col=col_ix,
+                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                    pieces_per_changed_row=np.array([1, 2]),
+                                    landing_height_bonus=0.5, num_features=self.num_features,
+                                    feature_type=self.feature_type)
+            after_states.append(new_state)
+
+        # Vertical placements.
+        max_col_index = self.num_columns - 1
+        for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
+            # Top-right corner
+            anchor_row = np.maximum(current_state.lowest_free_rows[col_ix] - 1,
+                                    current_state.lowest_free_rows[col_ix + 1])
+            new_representation = current_state.representation.copy()
+            new_representation[anchor_row + 1, col_ix] = 1
+            new_representation[anchor_row:(anchor_row + 2), col_ix + 1] = 1
+            new_lowest_free_rows = current_state.lowest_free_rows.copy()
+            new_lowest_free_rows[col_ix: (col_ix + 2)] = anchor_row + 2
+            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                    anchor_col=col_ix,
+                                    changed_lines=np.arange(anchor_row, anchor_row + 2),
+                                    pieces_per_changed_row=np.array([1, 2]),
+                                    landing_height_bonus=.5, num_features=self.num_features,
+                                    feature_type=self.feature_type)
+            after_states.append(new_state)
+            # Bottom-left corner
+            anchor_row = np.max(current_state.lowest_free_rows[col_ix:(col_ix + 2)])
+            new_representation = current_state.representation.copy()
+            new_representation[anchor_row:(anchor_row + 2), col_ix] = 1
+            new_representation[anchor_row, col_ix + 1] = 1
+            new_lowest_free_rows = current_state.lowest_free_rows.copy()
+            new_lowest_free_rows[col_ix] = anchor_row + 2
+            new_lowest_free_rows[col_ix + 1] = anchor_row + 1
+            new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
+                                    anchor_col=col_ix,
+                                    changed_lines=np.arange(anchor_row, anchor_row + 1),
+                                    pieces_per_changed_row=np.array([2]),
+                                    landing_height_bonus=.5, num_features=self.num_features,
+                                    feature_type=self.feature_type)
+            after_states.append(new_state)
+        return after_states
+
+
 class SnakeL(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         Tetromino.__init__(self, feature_type, num_features, num_columns)
@@ -415,7 +541,8 @@ class LCorner(Tetromino):
         max_col_index = self.num_columns - 1
         for col_ix, free_pos in enumerate(current_state.lowest_free_rows[:max_col_index]):
             # Top-left corner
-            anchor_row = np.maximum(current_state.lowest_free_rows[col_ix], current_state.lowest_free_rows[col_ix + 1] - 2)
+            anchor_row = np.maximum(current_state.lowest_free_rows[col_ix],
+                                    current_state.lowest_free_rows[col_ix + 1] - 2)
             new_representation = current_state.representation.copy()
             new_representation[anchor_row + 2, col_ix + 1] = 1
             new_representation[anchor_row:(anchor_row + 3), col_ix] = 1
