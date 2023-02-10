@@ -217,7 +217,7 @@ class ThreeL(Tetromino):
             new_representation[anchor_row, col_ix:(col_ix + 2)] = 1
             new_representation[anchor_row + 1, col_ix + 1] = 1
             new_lowest_free_rows = current_state.lowest_free_rows.copy()
-            new_lowest_free_rows[col_ix:(col_ix + 2)] = anchor_row + 1  # todo: understand this! Should it be +2 or +1
+            new_lowest_free_rows[col_ix:(col_ix + 1)] = anchor_row + 1
             new_lowest_free_rows[col_ix + 1] = anchor_row + 2
             new_state = state.State(representation=new_representation, lowest_free_rows=new_lowest_free_rows,
                                     anchor_col=col_ix,
