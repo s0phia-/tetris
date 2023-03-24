@@ -34,26 +34,29 @@ class Tetris:
         self.tetrominos = [tetromino.ThreeL(feature_type, num_features, self.num_columns),
                            tetromino.ThreeLine(feature_type, num_features, self.num_columns)]
 
-            #               [tetromino.Straight(feature_type, num_features, self.num_columns),
-            #                tetromino.RCorner(feature_type, num_features, self.num_columns),
-            #                tetromino.LCorner(feature_type, num_features, self.num_columns),
-            #                tetromino.Square(feature_type, num_features, self.num_columns),
-            #                tetromino.SnakeR(feature_type, num_features, self.num_columns),
-            #                tetromino.SnakeL(feature_type, num_features, self.num_columns),
-            #                tetromino.T(feature_type, num_features, self.num_columns)]
+        #               [tetromino.Straight(feature_type, num_features, self.num_columns),
+        #                tetromino.RCorner(feature_type, num_features, self.num_columns),
+        #                tetromino.LCorner(feature_type, num_features, self.num_columns),
+        #                tetromino.Square(feature_type, num_features, self.num_columns),
+        #                tetromino.SnakeR(feature_type, num_features, self.num_columns),
+        #                tetromino.SnakeL(feature_type, num_features, self.num_columns),
+        #                tetromino.T(feature_type, num_features, self.num_columns)]
 
         # game setup
         self.tetromino_sampler = tetromino.TetrominoSampler(self.tetrominos)
-        self.reset()
+        self.current_state, self.current_tetromino = self.reset()
 
     def reset(self):
         # Reset state and choose first tetronimno
-        self.current_state = state.State(
+        current_state = state.State(
             representation=np.zeros((self.num_rows + self.tetromino_size, self.num_columns), dtype=np.int_),
             lowest_free_rows=np.zeros(self.num_columns, dtype=np.int_), num_features=self.num_features,
             feature_type=self.feature_type)
 
-        self.current_tetromino = self.tetromino_sampler.next_tetromino()
+        current_tetromino = self.tetromino_sampler.next_tetromino()
+        self.current_state = current_state
+        self.current_tetromino = current_tetromino
+        return current_state, current_tetromino
 
         # return np.append(self.current_state.representation.flatten(), self.current_tetromino.tet_ind)
 
@@ -112,7 +115,7 @@ class Tetris:
         print(print_board_to_string(self.current_state))
         print(self.current_tetromino)
 
-    def get_current_state_features(self):
+    def get_state(self):
         return self.current_state.get_features(direct_by=self.feature_directions)
 
     def single_rollout(self, action, policy_function, length):
