@@ -157,6 +157,7 @@ class SnakeR(Tetromino):
 class ThreeLine(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         Tetromino.__init__(self, feature_type, num_features, num_columns)
+        self.tet_ind = 0
 
     def __repr(self):
         return '''██ ██ ██'''
@@ -201,6 +202,7 @@ class ThreeLine(Tetromino):
 class ThreeL(Tetromino):
     def __init__(self, feature_type, num_features, num_columns):
         Tetromino.__init__(self, feature_type, num_features, num_columns)
+        self.tet_ind = 1
 
     def __repr__(self):
         return ''' ██ ██ 
