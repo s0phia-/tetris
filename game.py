@@ -30,6 +30,10 @@ class Tetris:
         self.num_features = num_features
         self.tetromino_size = tetromino_size
 
+        # rewards - the reward equals the number of lines cleared, plus the following
+        self.loss_reward = -100
+        self.timestep_reward = -1
+
         # The tetronimoes
         self.tetrominos = [tetromino.ThreeL(feature_type, num_features, self.num_columns),
                            tetromino.ThreeLine(feature_type, num_features, self.num_columns)]
@@ -78,10 +82,14 @@ class Tetris:
     def step(self, action):
         observation_features = self.get_after_states()[0][int(action)]
         self.current_state = self.afterstates[action]
-        reward = self.current_state.n_cleared_lines  # Malte used self.cleared_lines for this
+        # Malte used self.cleared_lines for this
+        lines_cleared = self.current_state.n_cleared_lines
+        reward = lines_cleared + self.timestep_reward
         self.current_tetromino = self.tetromino_sampler.next_tetromino()
         done = self.is_game_over(self.current_state)
-        return observation_features, reward, done, None
+        if done:
+            reward += self.loss_reward
+        return observation_features, reward, done, lines_cleared
 
     def is_game_over(self, state):
         afterstates = self.current_tetromino.get_after_states(state)
@@ -130,7 +138,7 @@ class Tetris:
             return -1
         rollout_return = 0
         for _ in range(length-1):
-            action = policy_function(self.get_after_states(include_terminal=True)[0])  # random.randrange(len(self.get_after_states()[0]))
+            action = policy_function(self.current_state, self.get_after_states(include_terminal=True)[0])  # random.randrange(len(self.get_after_states()[0]))
             _, reward, done, _ = self.step(action)
             rollout_return += reward
             if done:
