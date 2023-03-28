@@ -80,7 +80,6 @@ class Tetris:
             return action_features, None
 
     def step(self, action):
-        observation_features = self.get_after_states()[0][int(action)]
         self.current_state = self.afterstates[action]
         # Malte used self.cleared_lines for this
         lines_cleared = self.current_state.n_cleared_lines
@@ -89,6 +88,7 @@ class Tetris:
         done = self.is_game_over(self.current_state)
         if done:
             reward += self.loss_reward
+        observation_features = self.get_state()
         return observation_features, reward, done, lines_cleared
 
     def is_game_over(self, state):
